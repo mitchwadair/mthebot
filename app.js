@@ -271,7 +271,11 @@ const opts = {
     },
     channels: [
         'MtheB_'
-    ]
+    ],
+    connection: {
+        reconnect: true,
+        secure: true,
+    }
 };
 
 const client = new tmi.client(opts);
