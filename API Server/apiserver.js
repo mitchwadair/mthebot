@@ -46,6 +46,7 @@ module.exports = function(db) {
         const path = url.parse(req.url).pathname;
         const handler = apiRoutes[path];
         if (handler) {
+            res.setHeader('Access-Control-Allow-Origin', '*')
             handler(req, res);
         } else {
             res.writeHead(404);
