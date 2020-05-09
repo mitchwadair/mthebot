@@ -34,6 +34,7 @@ module.exports = function(db, actions) {
         if (req.method === 'OPTIONS') {
             res.writeHead(200);
             res.end();
+            return;
         }
 
         const originHeaderIPs = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(', ') : null;
