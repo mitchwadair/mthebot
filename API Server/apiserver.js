@@ -30,7 +30,7 @@ module.exports = function(db, actions) {
 
         const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
         const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
-        console.log(`**** TEST FORWARD IP:${req.headers['X-Forwarded-For']}, ISPRIVATE:${isPrivateRequest}`);
+        console.log(`**** TEST HEADERS:${req.headers}, ISPRIVATE:${isPrivateRequest}`);
 
         if (isPrivateRequest && !allowedOrigins.includes(origin)) {
             res.writeHead(401);
