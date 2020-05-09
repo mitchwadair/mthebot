@@ -7,7 +7,7 @@ const url = require('url');
 
 const get = (db, req, res) => {
     const channel = url.parse(req.url).pathname.split('/')[2];
-    db.query(`SELECT commands from channels where name='${channel}'`, (err, results) => {
+    db.query(`SELECT commands from channels where name=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
