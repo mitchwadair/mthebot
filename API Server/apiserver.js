@@ -25,13 +25,15 @@ module.exports = function(db, actions) {
 
     // request handler
     const apiRequestHandler = (req, res) => {
-        const origin = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(', ')[0] : null;
+        const originHeader = req.headers['x-forwarded-for'];
+        const origin = originHeader ? originHeader.split(', ')[originHeader.length - 2] : null;
         const path = url.parse(req.url).pathname.split('/')[1];
+        console.log(`** API REQUEST from origin ${origin}`);
 
         const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
         const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
 
-        if (isPrivateRequest && (process.env.IS_DEV != 'true' || (origin && !allowedOrigins.includes(origin)))) {
+        if (isPrivateRequest && origin !== null && !allowedOrigins.includes(origin)) {
             res.writeHead(401);
             res.end('Unauthorized request to private API');
             return;
