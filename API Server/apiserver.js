@@ -28,7 +28,7 @@ module.exports = function(db, actions) {
         const originHeader = req.headers['x-forwarded-for'];
         const origin = originHeader ? originHeader.split(', ')[originHeader.length - 2] : null;
         const path = url.parse(req.url).pathname.split('/')[1];
-        console.log(`** API REQUEST from origin ${origin}`);
+        console.log(`** API REQUEST from origin ${originHeader}`);
 
         const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
         const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
