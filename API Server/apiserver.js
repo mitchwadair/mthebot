@@ -27,10 +27,11 @@ module.exports = function(db, actions) {
 
     // request handler
     const apiRequestHandler = (req, res) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+
         // prevent CORS issue
         if (req.method === 'OPTIONS') {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
             res.writeHead(200);
             res.end();
         }
@@ -51,8 +52,6 @@ module.exports = function(db, actions) {
         
         const handler = isPrivateRequest ? apiRoutes.private[path] : apiRoutes.public[path];
         if (handler) {
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
             isPrivateRequest ? handler(db, actions, req, res) : handler(db, req, res);
         } else {
             res.writeHead(404);
