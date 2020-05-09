@@ -12,17 +12,17 @@ module.exports = function(db, actions) {
     // API routes
     const apiRoutes = {
         public: {
-            '/users': users,
+            'users': users,
         },
         private: {
-            '/commands': commands,
+            'commands': commands,
         }
     }
 
     // request handler
     const apiRequestHandler = (req, res) => {
         const origin = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket.remoteAddress;
-        const path = url.parse(req.url).pathname;
+        const path = url.parse(req.url).pathname.split('/')[1];
 
         const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
         const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
