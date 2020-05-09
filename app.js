@@ -30,11 +30,13 @@ Array.prototype.chunk = function(maxChunkSize) {
 // remove a channel from the active channels object
 const deleteChannel = channel => {
     // clear intervals for timed messages
-    channels[channel].timers.forEach(timer => {
-        clearInterval(timer);
-    });
-    delete channels[channel];
-    console.log(`** removed channel ${channel} from active channels`);
+    if (channels[channel]) {
+        channels[channel].timers.forEach(timer => {
+            clearInterval(timer);
+        });
+        delete channels[channel];
+        console.log(`** removed channel ${channel} from active channels`);
+    }
 }
 
 // get channel data from DB
