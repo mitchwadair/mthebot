@@ -5,8 +5,8 @@
 
 const url = require('url');
 
-const getChannelFromURL = url => {
-    return url.parse(url).pathname.split('/')[2];
+const getChannelFromURL = _url => {
+    return url.parse(_url).pathname.split('/')[2];
 }
 
 const get = (db, req, res) => {
@@ -27,7 +27,25 @@ const get = (db, req, res) => {
 }
 
 const post = (db, actions, req, res) => {
-
+    const channel = getChannelFromURL(req.url);
+    let body = [];
+    req.on('error', err => {
+        res.writeHead(500);
+        res.end(`ERROR: ${err}`);
+    }).on('data', chunk => {
+        body.push(chunk);
+    }).on('end', _ => {
+        body = Buffer.concat(body).toString();
+        db.query(`UPDATE channels SET commands=? WHERE name=?`, [body,channel], err => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            }
+            res.writeHead(200);
+            res.end();
+        });
+    });
 }
 
 const remove = (db, actions, req, res) => {
