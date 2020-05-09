@@ -27,6 +27,13 @@ module.exports = function(db, actions) {
 
     // request handler
     const apiRequestHandler = (req, res) => {
+        // prevent CORS issue
+        if (req.method === 'OPTIONS') {
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.writeHead(200);
+            res.end();
+        }
+
         const originHeaderIPs = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(', ') : null;
         const origin = originHeaderIPs ? originHeaderIPs[originHeaderIPs.length - 2] : null;
         const path = url.parse(req.url).pathname.split('/')[1];
