@@ -12,6 +12,15 @@ const APIServer = require('./API Server/apiserver');
 
 let channels = {};
 
+const USER_TYPES = {
+    user: 0,
+    vip: 1,
+    subscriber: 2,
+    moderator: 3,
+    global_mod: 3,
+    broadcaster: 3,
+}
+
 // ===================== HELPER FUNCTIONS =====================
 
 // extend Array to include a 'chunk' function
@@ -30,11 +39,44 @@ Array.prototype.chunk = function(maxChunkSize) {
 // remove a channel from the active channels object
 const deleteChannel = channel => {
     // clear intervals for timed messages
-    channels[channel].timers.forEach(timer => {
-        clearInterval(timer);
+    if (channels[channel]) {
+        channels[channel].timers.forEach(timer => {
+            clearInterval(timer);
+        });
+        delete channels[channel];
+        console.log(`** removed channel ${channel} from active channels`);
+    }
+}
+
+// get channel data from DB
+const fetchChannelData = channelKey => {
+    return new Promise((resolve, reject) => {
+        db.query(`SELECT commands,events,timers FROM channels WHERE name='${channelKey}'`, (err, results) => {
+            if (err) {
+                return reject(err);
+            } else {
+                const timers = JSON.parse(results[0].timers);
+                channels[channelKey] = {
+                    commands: JSON.parse(results[0].commands),
+                    events: JSON.parse(results[0].events),
+                    timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
+                    timers: Object.keys(timers).map(key => {
+                        if (timers[key].enabled) {
+                            return setInterval(_ => {
+                                if (channels[channelKey].timerMessageCount >= timers[key].messageThreshold) {
+                                    channels[channelKey].timerMessageCount = 0;
+                                    client.say(`#${channelKey}`, timers[key].message);
+                                }
+                            }, timers[key].seconds*1000);
+                        }
+                    }),
+                    timerMessageCount: 0,
+                }
+                console.log(`** fetched data for channel ${channelKey}`);
+                resolve()
+            }
+        });
     });
-    delete channels[channel];
-    console.log(`** removed channel ${channel} from active channels`);
 }
 
 // process the given channel
@@ -44,35 +86,27 @@ const processChannel = channelKey => {
         if (channels[channelKey] !== undefined) {
             clearTimeout(channels[channelKey].timeout);
             channels[channelKey].timeout = setTimeout(_ => {deleteChannel(channelKey)}, 300000);
-            resolve()
+            resolve();
         } else {
-            db.query(`SELECT commands,events,timers FROM channels WHERE name='${channelKey}'`, (err, results) => {
-                if (err) {
-                    return reject(err);
-                } else {
-                    const timers = JSON.parse(results[0].timers);
-                    channels[channelKey] = {
-                        commands: JSON.parse(results[0].commands),
-                        events: JSON.parse(results[0].events),
-                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                        timers: Object.keys(timers).map(key => {
-                            if (timers[key].enabled) {
-                                return setInterval(_ => {
-                                    if (channels[channelKey].timerMessageCount >= timers[key].messageThreshold) {
-                                        channels[channelKey].timerMessageCount = 0;
-                                        client.say(`#${channelKey}`, timers[key].message);
-                                    }
-                                }, timers[key].seconds*1000);
-                            }
-                        }),
-                        timerMessageCount: 0,
-                    }
-                    console.log(`** added channel ${channelKey} to active channels`);
-                    resolve()
-                }
-            });
+            fetchChannelData(channelKey).then(_ => {
+                console.log(`** added channel ${channelKey} to active channels`);
+                resolve();
+            }).catch(err => {
+                reject(err);
+            })
         }
     });
+}
+
+const getUserLevel = (userstate) => {
+    return userstate['badges-raw'].split(',').map(badge => {
+        return badge.split('/')[0];
+    }).reduce((total, badge) => {
+        if (USER_TYPES[badge] && USER_TYPES[badge] > total) {
+            return USER_TYPES[badge];
+        }
+        return total;
+    }, USER_TYPES.user);
 }
 
 // ===================== EVENT HANDLERS =====================
@@ -80,8 +114,9 @@ const processChannel = channelKey => {
 const onConnected = (address, port) => {
     console.log(`** MtheBot_ connected to ${address}:${port}`);
     console.log('** joining all serviced channels...');
-    db.query("SELECT name from channels", (err, results, fields) => {
+    db.query("SELECT name,enabled from channels", (err, results, fields) => {
         let promises = results.map(res => {
+            if (!res.enabled) return;
             return client.join(res.name);
         });
         Promise.all(promises).then(_ => {
@@ -101,9 +136,10 @@ const onChat = (channel, userstate, message, self) => {
         const full = message.trim();
 
         if (full.startsWith('!')) {
+            const userLevel = getUserLevel(userstate);
             const args = full.split(' ');
             const command = channels[channelKey].commands[args.shift().substring(1)];
-            if (command && !command.isOnCooldown) {
+            if (command && !command.isOnCooldown && userLevel >= command.userLevel) {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
@@ -313,4 +349,17 @@ db.connect(err => {
 
 // ===================== INIT API SERVER =====================
 
-APIServer(db);
+const actions = {
+    refreshChannelData: channel => {
+        if (channels[channel] !== undefined) {
+            deleteChannel(channel);
+            fetchChannelData(channel).then(_ => {
+                console.log(`** refreshed channel ${channel}`);
+            }).catch(err => {
+                console.log(`** ERROR refreshing channel ${channel}: ${err}`);
+            })
+        }
+    }
+}
+
+APIServer(db, actions);
