@@ -4,10 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 const url = require('url');
-
-const getChannelFromURL = _url => {
-    return url.parse(_url).pathname.split('/')[2];
-}
+const getChannelFromURL = require('../utils').getChannelFromURL;
 
 const get = (db, req, res) => {
     const channel = getChannelFromURL(req.url);
