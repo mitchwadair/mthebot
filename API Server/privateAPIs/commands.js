@@ -52,7 +52,6 @@ const remove = (db, actions, req, res) => {
     const channel = getChannelFromURL(req.url);
     const command = url.parse(req.url).pathname.split('/')[3];
     db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
-        console.log(results);
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
