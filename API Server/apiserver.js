@@ -30,9 +30,12 @@ module.exports = function(db, actions) {
 
         const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
         const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
+        console.log(`**** TEST ORIGIN:${origin}, ISPRIVATE:${isPrivateRequest}`);
+        
         if (isPrivateRequest && !allowedOrigins.includes(origin)) {
             res.writeHead(401);
             res.end('Unauthorized request to private API');
+            return;
         }
         
         const handler = isPrivateRequest ? apiRoutes.private[path] : apiRoutes.public[path];
