@@ -80,8 +80,9 @@ const processChannel = channelKey => {
 const onConnected = (address, port) => {
     console.log(`** MtheBot_ connected to ${address}:${port}`);
     console.log('** joining all serviced channels...');
-    db.query("SELECT name from channels", (err, results, fields) => {
+    db.query("SELECT name,enabled from channels", (err, results, fields) => {
         let promises = results.map(res => {
+            if (!res.enabled) return;
             return client.join(res.name);
         });
         Promise.all(promises).then(_ => {
