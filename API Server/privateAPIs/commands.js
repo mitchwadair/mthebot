@@ -11,7 +11,7 @@ const getChannelFromURL = _url => {
 
 const get = (db, req, res) => {
     const channel = getChannelFromURL(req.url);
-    db.query(`SELECT commands FROM channels WEHRE name=?`, [channel], (err, results) => {
+    db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
