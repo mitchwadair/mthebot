@@ -42,6 +42,7 @@ const post = (db, actions, req, res) => {
                 res.end(`ERROR: ${err}`);
                 return;
             }
+            actions.refreshChannelData(channel);
             res.writeHead(200);
             res.end();
         });
