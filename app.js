@@ -12,6 +12,15 @@ const APIServer = require('./API Server/apiserver');
 
 let channels = {};
 
+const USER_TYPES = {
+    user: 0,
+    vip: 1,
+    subscriber: 2,
+    moderator: 3,
+    global_mod: 3,
+    broadcaster: 3,
+}
+
 // ===================== HELPER FUNCTIONS =====================
 
 // extend Array to include a 'chunk' function
@@ -89,6 +98,17 @@ const processChannel = channelKey => {
     });
 }
 
+const getUserLevel = (userstate) => {
+    return userstate['badges-raw'].split(',').map(badge => {
+        return badge.split('/')[0];
+    }).reduce((total, badge) => {
+        if (USER_TYPES[badge] && USER_TYPES[badge] > total) {
+            return USER_TYPES[badge];
+        }
+        return total;
+    }, USER_TYPES.user);
+}
+
 // ===================== EVENT HANDLERS =====================
 
 const onConnected = (address, port) => {
@@ -116,9 +136,10 @@ const onChat = (channel, userstate, message, self) => {
         const full = message.trim();
 
         if (full.startsWith('!')) {
+            const userLevel = getUserLevel(userstate);
             const args = full.split(' ');
             const command = channels[channelKey].commands[args.shift().substring(1)];
-            if (command && !command.isOnCooldown) {
+            if (command && !command.isOnCooldown && userLevel >= command.userLevel) {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
