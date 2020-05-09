@@ -8,7 +8,7 @@ const url = require('url');
 const users = require('./publicAPIs/users');
 const commands = require('./privateAPIs/commands');
 
-module.exports = function(db) {
+module.exports = function(db, actions) {
     // API routes
     const apiRoutes = {
         public: {
@@ -34,7 +34,7 @@ module.exports = function(db) {
         const handler = isPrivateRequest ? apiRoutes.private[path] : apiRoutes.public[path];
         if (handler) {
             res.setHeader('Access-Control-Allow-Origin', '*')
-            handler(db, req, res);
+            isPrivateRequest ? handler(db, actions, req, res) : handler(db, req, res);
         } else {
             res.writeHead(404);
             res.end('Not Found');

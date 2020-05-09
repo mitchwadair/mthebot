@@ -9,18 +9,27 @@ const get = (db, req, res) => {
 
 }
 
-const post = (db, req, res) => {
+const post = (db, actions, req, res) => {
 
 }
 
-const update = (db, req, res) => {
+const remove = (db, actions, req, res) => {
 
 }
 
-const remove = (db, req, res) => {
-
-}
-
-module.exports = (db, req, res) => {
-    
+module.exports = (db, actions, req, res) => {
+    switch (req.method) {
+        case 'GET':
+            get(db, req, res);
+            break;
+        case 'POST':
+            post(db, actions, req, res);
+            break;
+        case 'DELETE':
+            remove(db, actions, req, res);
+            break;
+        default:
+            res.writeHead(400);
+            res.end('Bad Request');
+    }
 }

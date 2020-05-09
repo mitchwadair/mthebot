@@ -37,6 +37,37 @@ const deleteChannel = channel => {
     console.log(`** removed channel ${channel} from active channels`);
 }
 
+// get channel data from DB
+const fetchChannelData = channelKey => {
+    return new Promise((resolve, reject) => {
+        db.query(`SELECT commands,events,timers FROM channels WHERE name='${channelKey}'`, (err, results) => {
+            if (err) {
+                return reject(err);
+            } else {
+                const timers = JSON.parse(results[0].timers);
+                channels[channelKey] = {
+                    commands: JSON.parse(results[0].commands),
+                    events: JSON.parse(results[0].events),
+                    timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
+                    timers: Object.keys(timers).map(key => {
+                        if (timers[key].enabled) {
+                            return setInterval(_ => {
+                                if (channels[channelKey].timerMessageCount >= timers[key].messageThreshold) {
+                                    channels[channelKey].timerMessageCount = 0;
+                                    client.say(`#${channelKey}`, timers[key].message);
+                                }
+                            }, timers[key].seconds*1000);
+                        }
+                    }),
+                    timerMessageCount: 0,
+                }
+                console.log(`** fetched data for channel ${channelKey}`);
+                resolve()
+            }
+        });
+    });
+}
+
 // process the given channel
 // either restart the timeout func or add the channel to active channels
 const processChannel = channelKey => {
@@ -44,33 +75,14 @@ const processChannel = channelKey => {
         if (channels[channelKey] !== undefined) {
             clearTimeout(channels[channelKey].timeout);
             channels[channelKey].timeout = setTimeout(_ => {deleteChannel(channelKey)}, 300000);
-            resolve()
+            resolve();
         } else {
-            db.query(`SELECT commands,events,timers FROM channels WHERE name='${channelKey}'`, (err, results) => {
-                if (err) {
-                    return reject(err);
-                } else {
-                    const timers = JSON.parse(results[0].timers);
-                    channels[channelKey] = {
-                        commands: JSON.parse(results[0].commands),
-                        events: JSON.parse(results[0].events),
-                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                        timers: Object.keys(timers).map(key => {
-                            if (timers[key].enabled) {
-                                return setInterval(_ => {
-                                    if (channels[channelKey].timerMessageCount >= timers[key].messageThreshold) {
-                                        channels[channelKey].timerMessageCount = 0;
-                                        client.say(`#${channelKey}`, timers[key].message);
-                                    }
-                                }, timers[key].seconds*1000);
-                            }
-                        }),
-                        timerMessageCount: 0,
-                    }
-                    console.log(`** added channel ${channelKey} to active channels`);
-                    resolve()
-                }
-            });
+            fetchChannelData(channelKey).then(_ => {
+                console.log(`** added channel ${channelKey} to active channels`);
+                resolve();
+            }).catch(err => {
+                reject(err);
+            })
         }
     });
 }
@@ -314,4 +326,17 @@ db.connect(err => {
 
 // ===================== INIT API SERVER =====================
 
-APIServer(db);
+const actions = {
+    refreshChannelData: channel => {
+        if (channels[channel] !== undefined) {
+            deleteChannel(channel);
+            fetchChannelData(channel).then(_ => {
+                console.log(`** refreshed channel ${channel}`);
+            }).catch(err => {
+                console.log(`** ERROR refreshing channel ${channel}: ${err}`);
+            })
+        }
+    }
+}
+
+APIServer(db, actions);
