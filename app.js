@@ -359,6 +359,12 @@ const actions = {
                 console.log(`** ERROR refreshing channel ${channel}: ${err}`);
             })
         }
+    },
+    joinChannel: channel => {
+        return client.join(channel);
+    },
+    leaveChannel: channel => {
+        return client.part(channel);
     }
 }
 
