@@ -52,6 +52,7 @@ const remove = (db, actions, req, res) => {
     const channel = getChannelFromURL(req.url);
     const command = url.parse(req.url).pathname.split('/')[3];
     db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+        console.log(results);
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
@@ -61,14 +62,14 @@ const remove = (db, actions, req, res) => {
             res.end(`Channel ${channel} not found`);
             return;
         }
-        let commands = results[0].commands;
+        let commands = JSON.parse(results[0].commands);
         if (!Object.keys(commands).includes(command)) {
             res.writeHead(404);
             res.end(`Command ${command} for channel ${channel} not found`);
             return;
         }
         delete commands[command];
-        db.query(`UPDATE channels SET commands=? WHERE channel=?`, [commands, channel], (err, results) => {
+        db.query(`UPDATE channels SET commands=? WHERE name=?`, [JSON.stringify(commands), channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
