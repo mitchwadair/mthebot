@@ -5,9 +5,13 @@
 
 const url = require('url');
 
+const getChannelFromURL = url => {
+    return url.parse(url).pathname.split('/')[2];
+}
+
 const get = (db, req, res) => {
-    const channel = url.parse(req.url).pathname.split('/')[2];
-    db.query(`SELECT commands from channels where name=?`, [channel], (err, results) => {
+    const channel = getChannelFromURL(req.url);
+    db.query(`SELECT commands FROM channels WEHRE name=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
@@ -27,7 +31,36 @@ const post = (db, actions, req, res) => {
 }
 
 const remove = (db, actions, req, res) => {
-
+    const channel = getChannelFromURL(req.url);
+    const command = url.parse(req.url).pathname.split('/')[3];
+    db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+        if (err) {
+            res.writeHead(500);
+            res.end(`ERROR: ${err}`);
+            return;
+        } else if (!results.length) {
+            res.writeHead(404);
+            res.end(`Channel ${channel} not found`);
+            return;
+        }
+        let commands = results[0].commands;
+        if (!Object.keys(commands).includes(command)) {
+            res.writeHead(404);
+            res.end(`Command ${command} for channel ${channel} not found`);
+            return;
+        }
+        delete commands[command];
+        db.query(`UPDATE channels SET commands=? WHERE channel=?`, [commands, channel], (err, results) => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            }
+            actions.refreshChannelData(channel);
+            res.writeHead(200);
+            res.end();
+        });
+    });
 }
 
 module.exports = (db, actions, req, res) => {
