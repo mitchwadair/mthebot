@@ -68,7 +68,7 @@ const fetchChannelData = channelKey => {
                                         channels[channelKey].timers[i].messageCount = 0;
                                         client.say(`#${channelKey}`, timers[key].message);
                                     }
-                                }, timers[key].seconds),
+                                }, timers[key].seconds*1000),
                                 messageCount: 0,
                             }
                         }
