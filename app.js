@@ -41,7 +41,7 @@ const deleteChannel = channel => {
     // clear intervals for timed messages
     if (channels[channel]) {
         channels[channel].timers.forEach(timer => {
-            clearInterval(timer);
+            clearInterval(timer.interval);
         });
         delete channels[channel];
         console.log(`** removed channel ${channel} from active channels`);
@@ -62,15 +62,17 @@ const fetchChannelData = channelKey => {
                     timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
                     timers: Object.keys(timers).map(key => {
                         if (timers[key].enabled) {
-                            return setInterval(_ => {
-                                if (channels[channelKey].timerMessageCount >= timers[key].messageThreshold) {
-                                    channels[channelKey].timerMessageCount = 0;
-                                    client.say(`#${channelKey}`, timers[key].message);
-                                }
-                            }, timers[key].seconds*1000);
+                            return {
+                                interval: setInterval(_ => {
+                                    if (channels[channelKey].timers[key].messageCount >= timers[key].messageThreshold) {
+                                        channels[channelKey].timers[key].messageCount = 0;
+                                        client.say(`#${channelKey}`, timers[key].message);
+                                    }
+                                }, timers[key].seconds*1000),
+                                messageCount: 0,
+                            }
                         }
                     }),
-                    timerMessageCount: 0,
                 }
                 console.log(`** fetched data for channel ${channelKey}`);
                 resolve()
@@ -132,7 +134,9 @@ const onChat = (channel, userstate, message, self) => {
 
     const channelKey = channel.substring(1);
     processChannel(channelKey).then(_ => {
-        channels[channelKey].timerMessageCount++;
+        channels[channelKey].timers.forEach(timer => {
+            timer.messageCount++
+        });
         const full = message.trim();
 
         if (full.startsWith('!')) {
