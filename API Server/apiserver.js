@@ -29,6 +29,7 @@ module.exports = function(db, actions) {
     const apiRequestHandler = (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+        res.setHeader('Content-Type', 'application/json');
 
         // prevent CORS issue
         if (req.method === 'OPTIONS') {
@@ -40,7 +41,7 @@ module.exports = function(db, actions) {
         const originHeaderIPs = req.headers['x-forwarded-for'] ? req.headers['x-forwarded-for'].split(', ') : null;
         const origin = originHeaderIPs ? originHeaderIPs[originHeaderIPs.length - 2] : null;
         const path = url.parse(req.url).pathname.split('/')[1];
-        console.log(`** API REQUEST from origin ${origin}`);
+        //console.log(`** API REQUEST from origin ${origin}`);
 
         const allowedOrigins = process.env.ALLOWED_ORIGINS.split(',');
         const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
