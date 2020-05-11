@@ -10,6 +10,7 @@ const commands = require('./privateAPIs/commands');
 const timers = require('./privateAPIs/timers');
 const events = require('./privateAPIs/events');
 const chats = require('./privateAPIs/chats');
+const init = require('./privateAPIs/init');
 
 module.exports = function(db, actions) {
     // API routes
@@ -22,6 +23,7 @@ module.exports = function(db, actions) {
             'timers': timers,
             'events': events,
             'chats': chats,
+            'init': init,
         }
     }
 
