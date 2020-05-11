@@ -29,7 +29,7 @@ module.exports = function(db, actions) {
     const apiRequestHandler = (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
         // prevent CORS issue
         if (req.method === 'OPTIONS') {
