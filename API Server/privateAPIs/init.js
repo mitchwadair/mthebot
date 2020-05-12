@@ -41,7 +41,7 @@ const post = (db, actions, req, res) => {
         }
     }
     const channel = getChannelFromURL(req.url);
-    let query = `INSERT INTO channels VALUES ("${channel}", true, "{}", ${db.escape(JSON.stringify(defaultEvents))}, "{}");`;
+    let query = `INSERT INTO channels VALUES ("${channel}", true, "[]", ${db.escape(JSON.stringify(defaultEvents))}, "[]");`;
     db.query(query, err => {
         if (err) {
             res.writeHead(500);

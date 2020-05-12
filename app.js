@@ -60,15 +60,15 @@ const fetchChannelData = channelKey => {
                     commands: JSON.parse(results[0].commands),
                     events: JSON.parse(results[0].events),
                     timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                    timers: Object.keys(timers).map((key, i) => {
-                        if (timers[key].enabled) {
+                    timers: timers.map((timer, i) => {
+                        if (timer.enabled) {
                             return {
                                 interval: setInterval(_ => {
-                                    if (channels[channelKey].timers[i].messageCount >= timers[key].messageThreshold) {
+                                    if (channels[channelKey].timers[i].messageCount >= timer.messageThreshold) {
                                         channels[channelKey].timers[i].messageCount = 0;
-                                        client.say(`#${channelKey}`, timers[key].message);
+                                        client.say(`#${channelKey}`, timer.message);
                                     }
-                                }, timers[key].seconds*1000),
+                                }, timer.seconds*1000),
                                 messageCount: 0,
                             }
                         }
