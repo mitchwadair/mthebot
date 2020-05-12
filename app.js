@@ -142,7 +142,10 @@ const onChat = (channel, userstate, message, self) => {
         if (full.startsWith('!')) {
             const userLevel = getUserLevel(userstate);
             const args = full.split(' ');
-            const command = channels[channelKey].commands[args.shift().substring(1)];
+            const alias = args.shift().substring(1);
+            const command = channels[channelKey].commands.find(cmd => {
+                return cmd.alias === alias;
+            });
             if (command && !command.isOnCooldown && userLevel >= command.userLevel) {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
