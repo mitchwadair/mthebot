@@ -43,7 +43,7 @@ MtheBot_ is currently a one-man operation.  Because of this, I incur numerous mo
     <img src="./assets/logo.png" height="100px"/>
 </p>
 
-MtheBot_ is built using [tmi.js](https://github.com/tmijs/tmi.js).  The back-end is built using a custom API server which hosts both a private API used by the front-end as well as a public API for general data (used in the "users" tag on this repo for example).  The bot's back end is run through AWS Elastic Beanstalk and uses a MySQL database attached to the EB environment.
+MtheBot_ is built using [tmi.js](https://github.com/tmijs/tmi.js).  The back-end is built using a custom API server which hosts both a private API used by the front-end as well as a public API for general data (used in the "users" tag on this repo for example).  The bot's back end is run through [AWS Elastic Beanstalk](https://aws.amazon.com/elasticbeanstalk/) and uses a [MySQL](https://www.mysql.com/) database attached to the EB environment.
 ## The Web Application
 <p align="center">
     <a href="https://vuejs.org/">
