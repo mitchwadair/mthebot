@@ -84,7 +84,7 @@ CREATE TABLE channels (
     timers json
 );
 ```
-To create a new table entry to test with, you can make a call to the `init` API when running the bot.  To do this, I recommend using the [Postman](https://www.postman.com/) collections which can be found in the [API Server/Postman Collections](API Server/Postman Collections) folder of this repository.  If you'd rather not use Postman, you can run the following curl command:
+To create a new table entry to test with, you can make a call to the `init` API when running the bot.  To do this, I recommend using the [Postman](https://www.postman.com/) collections which can be found in the [API Server/Postman Collections](API%20Server/Postman%20Collections) folder of this repository.  If you'd rather not use Postman, you can run the following curl command:
 ```sh
 curl -X POST localhost:8080/init/<desiredChannelName>
 ```
