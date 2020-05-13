@@ -8,7 +8,7 @@
 # Contents
 - [What is MtheBot_?](#what-is-mthebot_)
 - [How Can I Support MtheBot_?](#how-can-i-support-mthebot_)
-- [MtheBot_'s Tech Stack](#mthebot_-s-tech-stack)
+- [MtheBot_'s Tech Stack](#mthebot_s-tech-stack)
   - [The Bot Itself](#the-bot-itself)
   - [The Web Application](#the-web-application)
 - [Contribute](#contribute)
