@@ -1,5 +1,5 @@
 <p align="center">
-    <a href="https://bot.mtheb.tv" target="_blank" rel="noopener noreferrer">
+    <a href="https://bot.mtheb.tv">
         <img src='./assets/logo_text.png' width='300px' height='360px'/>
     </a>
     </br></br>
@@ -28,15 +28,15 @@ MtheBot_ is currently a one-man operation.  Because of this, I incur numerous mo
 # MtheBot_'s Tech Stack
 ## The Bot Itself
 <p align="center">
-    <a href="https://tmijs.com/" target="_blank" rel="noopener noreferrer">
+    <a href="https://tmijs.com/">
         <img src="https://avatars0.githubusercontent.com/u/17866914?s=200&v=4" height="100px"/>
     </a>
     &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-    <a href="https://aws.amazon.com/elasticbeanstalk/" target="_blank" rel="noopener noreferrer">
+    <a href="https://aws.amazon.com/elasticbeanstalk/">
         <img src="https://d1.awsstatic.com/icons/console_elasticbeanstalk_icon.0f7eb0140e1ef6c718d3f806beb7183d06756901.png" height="100px"/>
     </a>
     &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-    <a href="https://www.mysql.com/" target="_blank" rel="noopener noreferrer">
+    <a href="https://www.mysql.com/">
         <img src="https://www.mysql.com/common/logos/powered-by-mysql-167x86.png" height="100px"/>
     </a>
     &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
@@ -46,11 +46,11 @@ MtheBot_ is currently a one-man operation.  Because of this, I incur numerous mo
 MtheBot_ is built using [tmi.js](https://github.com/tmijs/tmi.js).  The back-end is built using a custom API server which hosts both a private API used by the front-end as well as a public API for general data (used in the "users" tag on this repo for example).  The bot's back end is run through AWS Elastic Beanstalk and uses a MySQL database attached to the EB environment.
 ## The Web Application
 <p align="center">
-    <a href="https://vuejs.org/" target="_blank" rel="noopener noreferrer">
+    <a href="https://vuejs.org/">
         <img src="https://vuejs.org/images/logo.png" height="100px"/>
     </a>
     &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp
-    <a href="https://vuetifyjs.com/" target="_blank" rel="noopener noreferrer">
+    <a href="https://vuetifyjs.com/">
         <img src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-light.png" height="100px"/>
     </a>
 </p>
