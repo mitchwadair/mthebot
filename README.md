@@ -6,7 +6,7 @@
 </p>
 
 # Contents
-- [What is MtheBot_?](#what-is-mthebot)
+- [What is MtheBot_?](#what-is-mthebot_?)
 - [How Can I Support MtheBot_?](#how-can-i-support-mthebot)
 - [MtheBot_'s Tech Stack](#mthebots-tech-stack)
   - [The Bot Itself](#the-bot-itself)
