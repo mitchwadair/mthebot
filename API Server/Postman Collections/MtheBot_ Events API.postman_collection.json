@@ -1,0 +1,57 @@
+{
+	"info": {
+		"_postman_id": "65902755-e8fb-4320-9511-6dab5d5405d5",
+		"name": "MtheBot_ Events API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GET",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/events/mtheb_",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"events",
+						"mtheb_"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"sub\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} just subbed with a {{type}} sub!\"\n    },\n    \"host\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} hosted for {{viewers}} viewers!\"\n    },\n    \"raid\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} raided for {{viewers}} viewers!\"\n    },\n    \"cheer\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} just cheered {{amount}} bits!\"\n    },\n    \"resub\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} resubbed for {{months}} months!\"\n    },\n    \"subgift\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} gifted {{recipient}} a sub!\"\n    },\n    \"giftupgrade\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} upgraded their gifted sub from {{gifter}}!\"\n    },\n    \"mysterygift\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} gifted {{count}} subs!\"\n    },\n    \"anongiftupgrade\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} upgraded their gifted sub!\"\n    }\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/events/mtheb_",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"events",
+						"mtheb_"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

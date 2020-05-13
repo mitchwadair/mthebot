@@ -1,0 +1,77 @@
+{
+	"info": {
+		"_postman_id": "179a8baf-c3bb-4786-8120-3a5b8ae56b90",
+		"name": "MtheBot_ Timers API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "GET",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/timers/mtheb_",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"timers",
+						"mtheb_"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POST",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "[\n    {\n    \t\"name\": \"prime\",\n        \"enabled\": true,\n        \"message\": \"If you have twitch prime, don't forget that you get one free subscription every month! Consider using it here to support me\",\n        \"seconds\": 300,\n        \"messageThreshold\": 5\n    }\n]",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/timers/mtheb_",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"timers",
+						"mtheb_"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "DELETE",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/timers/mtheb_/prime",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"timers",
+						"mtheb_",
+						"prime"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

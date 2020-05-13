@@ -1,0 +1,29 @@
+{
+	"info": {
+		"_postman_id": "a06aa389-39a0-4844-980a-713b398e37a0",
+		"name": "MtheBot_ Init API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "POST",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/init/test",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"init",
+						"test"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
