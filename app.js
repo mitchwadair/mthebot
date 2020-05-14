@@ -101,14 +101,14 @@ const processChannel = channelKey => {
 }
 
 const getUserLevel = (userstate) => {
-    return userstate['badges-raw'].split(',').map(badge => {
+    return userstate['badges-raw'] ? userstate['badges-raw'].split(',').map(badge => {
         return badge.split('/')[0];
     }).reduce((total, badge) => {
         if (USER_TYPES[badge] && USER_TYPES[badge] > total) {
             return USER_TYPES[badge];
         }
         return total;
-    }, USER_TYPES.user);
+    }, USER_TYPES.user) : 0;
 }
 
 // ===================== EVENT HANDLERS =====================
