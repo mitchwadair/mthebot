@@ -117,10 +117,10 @@ const onConnected = (address, port) => {
     console.log(`** MtheBot_ connected to ${address}:${port}`);
     console.log('** joining all serviced channels...');
     db.query("SELECT name,enabled from channels", (err, results, fields) => {
-        let promises = results.map(res => {
+        let promises = results ? results.map(res => {
             if (!res.enabled) return;
             return client.join(res.name);
-        });
+        }) : [];
         Promise.all(promises).then(_ => {
             console.log('** all serviced channels have been joined');
         }).catch(err => {
