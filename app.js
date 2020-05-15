@@ -309,7 +309,7 @@ const onCheer = (channel, userstate, message) => {
 
 const opts = {
     identity: {
-        username: 'MtheBot_',
+        username: process.env.BOT_USERNAME,
         password: process.env.OAUTH_TOKEN,
     },
     channels: [
