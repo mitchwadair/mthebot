@@ -1,0 +1,37 @@
+{
+	"info": {
+		"_postman_id": "423a2935-5f5d-4319-8237-5f38517a07c7",
+		"name": "MtheBot_ Contact API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "POST",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"name\": \"Bot User\",\n\t\"email\": \"user@example.com\",\n\t\"type\": \"General\",\n\t\"subject\": \"Just a comment\",\n\t\"message\": \"I love your bot!\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/contact",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"contact"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}
