@@ -71,13 +71,16 @@ npm install
 ```
 Next, you need to create a `.env` file in the root directory.  The file should have the following properties:
 ```
+BOT_USERNAME=<the username associated with your bot>
 OAUTH_TOKEN=<the OAuth token for your account https://twitchapps.com/tmi/>
+CLIENT_ID=<your Twitch app id (get from https://dev.twitch.tv/console)>
 RDS_HOSTNAME=<the database host>
 RDS_USERNAME=<the db username>
 RDS_PASSWORD=<the db password>
 RDS_PORT=<the db port>
 RDS_DB_NAME=<the db name>
-ALLOWED_ORIGINS=<ip addresses that are allowed to access the private API (only needed if making API calls from outside localhost)>
+GMAIL_USERNAME=<the gmail account you wish to recieve contact emails at>
+GMAIL_PASSWORD=<gmail application password generated from gmail settings>
 ```
 ### Database
 First, you must set up a [MySQL](https://www.mysql.com/) database for MtheBot_ to retrieve data from.  There is a specific structure needed for your database to work correctly.  In order to initialize your DB with the correct structure, run this SQL query:
