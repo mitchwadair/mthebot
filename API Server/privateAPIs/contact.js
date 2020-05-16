@@ -40,7 +40,7 @@ const post = (req, res) => {
     });
 }
 
-module.exports = (db, actions, req, res) => {
+module.exports = (db, req, res) => {
     switch (req.method) {
         case 'POST':
             post(req, res);
