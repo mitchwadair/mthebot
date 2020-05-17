@@ -12,10 +12,11 @@ const post = (req, res) => {
         const emailData = {
             from: '', //this is ignored by gmail
             to: process.env.GMAIL_USERNAME,
-            subject: `${body.type}: ${body.subject} from ${body.name}`,
+            subject: `${body.type}: "${body.subject}" from ${body.name}`,
             html: `
-                <p>${body.name}: <a href="mailto:${body.email}?subject=RE: ${body.type}: ${body.subject}&body=\n\nYou said:\n> ${body.message}">${body.email}</a></p></br>
-                <p>${body.message}</p>
+                <p>${body.type} contact from ${body.name}, ${body.email}</p></br>
+                <p>${body.message}</p></br>
+                <a href="mailto:${body.email}?subject=RE: ${body.type}: ${body.subject}&body=Hi ${body.name.split(' ')[0]},\n\n\nYou said:\n${body.message}">Reply</a>
             `,
         }
 
