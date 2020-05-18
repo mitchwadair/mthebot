@@ -69,7 +69,7 @@ const DATA_TAGS = [
                             resolve({tag: '{{followage}}', value: `${user} does not follow ${channel}`});
                         }
                     }).catch(err => {
-                        reject(err);
+                        reject({tag: '{{uptime}}', reason: 'error fetching followage data'});
                     });
                 });
             });
@@ -87,7 +87,7 @@ const DATA_TAGS = [
                         resolve({tag: '{{uptime}}', value: `${channel} is not live`});
                     }
                 }).catch(err => {
-                    reject(err);
+                    reject({tag: '{{uptime}}', reason: 'error fetching uptime data'});
                 });
             })
         },
@@ -237,6 +237,8 @@ const onChat = (channel, userstate, message, self) => {
                     results.forEach(r => {
                         if (r.status === 'fulfilled') {
                             message = message.replace(new RegExp(r.value.tag, 'g'), r.value.value);
+                        } else {
+                            message = message.replace(new RegExp(r.reason.tag, 'g'), r.reason.reason);
                         }
                     });
                     client.say(channel, message);
