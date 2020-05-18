@@ -81,6 +81,7 @@ RDS_PORT=<the db port>
 RDS_DB_NAME=<the db name>
 GMAIL_USERNAME=<the gmail account you wish to recieve contact emails at>
 GMAIL_PASSWORD=<gmail application password generated from gmail settings>
+NODE_ENV=development
 ```
 ### Database
 First, you must set up a [MySQL](https://www.mysql.com/) database for MtheBot_ to retrieve data from.  There is a specific structure needed for your database to work correctly.  In order to initialize your DB with the correct structure, run this SQL query:
