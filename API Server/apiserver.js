@@ -109,6 +109,9 @@ module.exports = function(db, actions) {
                             }
                         }
                     });
+                }).on('error', err => {
+                    res.writeHead(err.status);
+                    res.end(`ERROR: ${err}`);
                 });
             }
         } else {
