@@ -9,19 +9,6 @@ const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
 const twitchAPI = require('./External Data APIs/twitch');
 
-// ===================== DATA =====================
-
-let channels = {};
-
-const USER_TYPES = {
-    user: 0,
-    vip: 1,
-    subscriber: 2,
-    moderator: 3,
-    global_mod: 3,
-    broadcaster: 3,
-}
-
 // ===================== HELPER FUNCTIONS =====================
 
 // extend Array to include a 'chunk' function
@@ -36,6 +23,94 @@ Array.prototype.chunk = function(maxChunkSize) {
     }
     return chunks;
 }
+
+const getLengthDataFromMillis = ms => {
+    const date = new Date(ms);
+    return {
+        years: date.getUTCFullYear() - 1970,
+        months: date.getUTCMonth(),
+        days: date.getUTCDate(),
+        hours: date.getUTCHours(),
+        minutes: date.getUTCMinutes(),
+        seconds: date.getUTCSeconds(),
+    }
+}
+
+// ===================== DATA =====================
+
+let channels = {};
+
+const USER_TYPES = {
+    user: 0,
+    vip: 1,
+    subscriber: 2,
+    moderator: 3,
+    global_mod: 3,
+    broadcaster: 3,
+}
+
+const DATA_TAGS = [
+    {
+        tag: '{{followage}}',
+        dataFetch: (channel, userstate) => {
+            return new Promise((resolve, reject) => {
+                twitchAPI.getUser(channel).then(d => {
+                    const channelID = d.id;
+                    twitchAPI.getFollowData(userstate['user-id'], channelID).then(data => {
+                        if (data) {
+                            const length = getLengthDataFromMillis(Date.now() - Date.parse(data.followed_at));
+                            const val = `
+                                ${length.years > 0 ? `${length.years} year${length.years > 1 ? 's' : ''}` : ''}
+                                ${length.months > 0 ? `${length.months} month${length.months > 1 ? 's' : ''}` : ''}
+                                ${length.days > 0 ? `${length.days} day${length.days > 1 ? 's' : ''}` : ''}
+                            `;
+                            resolve({tag: '{{followage}}', value: val});
+                        } else {
+                            resolve({tag: '{{followage}}', value: `${user} does not follow ${channel}`});
+                        }
+                    }).catch(err => {
+                        reject(err);
+                    });
+                });
+            });
+        },
+    },
+    {
+        tag: '{{uptime}}',
+        dataFetch: (channel, userstate) => {
+            return new Promise((resolve, reject) => {
+                twitchAPI.getStreamData(channel).then(data => {
+                    if (data) {
+                        const millis = Date.now() - Date.parse(data.started_at);
+                        resolve({tag: '{{uptime}}', value: millis});
+                    } else {
+                        resolve({tag: '{{uptime}}', value: `${channel} is not live`});
+                    }
+                }).catch(err => {
+                    reject(err);
+                });
+            })
+        },
+    },
+    {
+        tag: '{{commands}}',
+        dataFetch: (channel, userstate) => {
+            return new Promise((resolve, reject) => {
+                const commands = channels[channel].commands.filter(c => {
+                    return c.userLevel === 0;
+                }).map(c => {
+                    return `!${c.alias}`;
+                });
+                resolve({
+                    tag: '{{commands}}',
+                    value: commands.join(', '),
+                });
+            })
+        }
+    }
+]
+
+// ===================== DATA FUNCTIONS =====================
 
 // remove a channel from the active channels object
 const deleteChannel = channel => {
@@ -152,7 +227,20 @@ const onChat = (channel, userstate, message, self) => {
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
                     .replace(new RegExp('{{sender}}', 'g'), userstate['display-name']);
-                client.say(channel, message);
+                let messagePromises = [];
+                DATA_TAGS.forEach(dt => {
+                    if (message.includes(dt.tag)) {
+                        messagePromises.push(dt.dataFetch(channelKey, userstate));
+                    }
+                });
+                Promise.allSettled(messagePromises).then(results => {
+                    results.forEach(r => {
+                        if (r.status === 'fulfilled') {
+                            message = message.replace(new RegExp(r.value.tag, 'g'), r.value.value);
+                        }
+                    });
+                    client.say(channel, message);
+                });
             }
         }
     }).catch(err => {
