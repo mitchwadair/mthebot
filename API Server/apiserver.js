@@ -51,6 +51,17 @@ module.exports = function(db, actions) {
         const handler = isPrivateRequest ? apiRoutes.private[path] : apiRoutes.public[path];
 
         if (isPrivateRequest) {
+            //allow all requests in development
+            if (process.env.NODE_ENV === 'development') {
+                if (handler) {
+                    handler(db, actions, req, res);
+                } else {
+                    res.writeHead(404);
+                    res.end('Not Found');
+                }
+                return;
+            }
+
             const channel = getChannelFromURL(req.url);
             if (sessionPool[channel]) {
                 clearTimeout(sessionPool[channel].timeout);
@@ -74,7 +85,7 @@ module.exports = function(db, actions) {
                 https.get('https://api.twitch.tv/helix/users', {headers: headers}, r => {
                     let body = [];
                     r.on('error', err => {
-                        res.writeHead(500);
+                        res.writeHead(err.status);
                         res.end(`ERROR: ${err}`);
                     }).on('data', chunk => {
                         body.push(chunk);
