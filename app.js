@@ -96,8 +96,14 @@ const DATA_TAGS = [
             return new Promise((resolve, reject) => {
                 twitchAPI.getStreamData(channel).then(data => {
                     if (data) {
-                        const millis = Date.now() - Date.parse(data.started_at);
-                        resolve({tag: '{{uptime}}', value: millis});
+                        const length = getLengthDataFromMillis(Date.now() - Date.parse(data.followed_at));
+                            const val = `
+                                ${length.days > 0 ? `${length.days} day${length.days > 1 ? 's' : ''}` : ''}
+                                ${length.hours > 0 ? `${length.hours} hour${length.hours > 1 ? 's' : ''}` : ''}
+                                ${length.minutes > 0 ? `${length.minutes} minute${length.minutes > 1 ? 's' : ''}` : ''}
+                                ${length.seconds > 0 ? `${length.seconds} second${length.seconds > 1 ? 's' : ''}` : ''}
+                            `;
+                        resolve({tag: '{{uptime}}', value: val});
                     } else {
                         resolve({tag: '{{uptime}}', value: `${channel} is not live`});
                     }
