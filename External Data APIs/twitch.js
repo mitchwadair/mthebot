@@ -19,11 +19,9 @@ const refreshAppToken = _ => {
                     data.push(chunk);
                 }).on('end', _ => {
                     data = JSON.parse(Buffer.concat(data).toString());
-                    console.log(data);
                     if (data.error) {
                         reject(data.error);
                     } else {
-                        console.log(data.access_token);
                         headers['Authorization'] = `Bearer ${data.access_token}`;
                         hasValidToken = true;
                         setTimeout(_ => {hasValidToken = false}, data.expires_in);
@@ -124,8 +122,6 @@ module.exports = {
                         data.push(chunk);
                     }).on('end', _ => {
                         data = JSON.parse(Buffer.concat(data).toString());
-                        console.log(headers);
-                        console.log(data);
                         if (data.error) {
                             reject(data.error);
                         } else {
