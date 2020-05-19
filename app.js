@@ -148,7 +148,7 @@ const deleteChannel = channel => {
 // get channel data from DB
 const fetchChannelData = channelKey => {
     return new Promise((resolve, reject) => {
-        db.query(`SELECT commands,events,timers FROM channels WHERE name='${channelKey}'`, (err, results) => {
+        db.query(`SELECT commands,events,timers,AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') AS token FROM channels WHERE name='${channelKey}'`, (err, results) => {
             if (err) {
                 return reject(err);
             } else {
@@ -170,6 +170,7 @@ const fetchChannelData = channelKey => {
                             }
                         }
                     }),
+                    accessToken: results[0].token.toString(),
                 }
                 console.log(`** fetched data for channel ${channelKey}`);
                 resolve()

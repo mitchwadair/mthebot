@@ -41,7 +41,8 @@ const post = (db, actions, req, res) => {
         }
     }
     const channel = getChannelFromURL(req.url);
-    let query = `INSERT INTO channels VALUES ("${channel}", true, "[]", ${db.escape(JSON.stringify(defaultEvents))}, "[]");`;
+    const token = req.headers.authorization.replace('Bearer ', '');
+    let query = `INSERT INTO channels VALUES ("${channel}", AES_ENCRYPT("${token}", "${process.env.CLIENT_SECRET}"), true, "[]", ${db.escape(JSON.stringify(defaultEvents))}, "[]");`;
     db.query(query, err => {
         if (err) {
             res.writeHead(500);

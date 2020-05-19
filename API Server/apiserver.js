@@ -13,6 +13,7 @@ const events = require('./privateAPIs/events');
 const chats = require('./privateAPIs/chats');
 const init = require('./privateAPIs/init');
 const contact = require('./privateAPIs/contact');
+const auth = require('./privateAPIs/auth');
 
 const getChannelFromURL = require('./utils').getChannelFromURL;
 
@@ -29,6 +30,7 @@ module.exports = function(db, actions) {
             'events': events,
             'chats': chats,
             'init': init,
+            'auth': auth,
         }
     }
 
