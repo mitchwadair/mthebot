@@ -152,7 +152,6 @@ const fetchChannelData = channelKey => {
             if (err) {
                 return reject(err);
             } else {
-                console.log(`** RESULTS ${Object.keys(results[0])}`);
                 const timers = JSON.parse(results[0].timers);
                 channels[channelKey] = {
                     commands: JSON.parse(results[0].commands),
