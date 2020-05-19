@@ -74,6 +74,27 @@ module.exports = {
             });
         });
     },
+    getFollowCount: channelID => {
+        return new Promise((resolve, reject) => {
+            refreshAppToken().then(_ => {
+                https.get(`https://api.twitch.tv/helix/users/follows?to_id=${channelID}&first=1`, {headers: headers}, res => {
+                    let data = []
+                    res.on('error', err => {
+                        reject(err);
+                    }).on('data', chunk => {
+                        data.push(chunk);
+                    }).on('end', _ => {
+                        data = JSON.parse(Buffer.concat(data).toString());
+                        resolve(data.total);
+                    });
+                }).on('error', err => {
+                    reject(err);
+                });
+            }).catch(err => {
+                reject(err);
+            });
+        });
+    },
     getStreamData: loginName => {
         return new Promise((resolve, reject) => {
             refreshAppToken().then(_ => {

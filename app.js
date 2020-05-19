@@ -69,11 +69,26 @@ const DATA_TAGS = [
                             resolve({tag: '{{followage}}', value: `${user} does not follow ${channel}`});
                         }
                     }).catch(err => {
-                        reject({tag: '{{uptime}}', reason: 'error fetching followage data'});
+                        reject({tag: '{{followage}}', reason: 'error fetching followage data'});
                     });
                 });
             });
         },
+    },
+    {
+        tag: '{{followcount}}',
+        dataFetch: (channel, userstate) => {
+            return new Promise((resolve, reject) => {
+                twitchAPI.getUser(channel).then(d => {
+                    const channelID = d.id;
+                    twitchAPI.getFollowCount(channelID).then(data => {
+                        resolve({tag: '{{followcount}}', value: data});
+                    }).catch(err => {
+                        reject({tag: '{{followcount}}', reason: 'error fetching followcount data'});
+                    });
+                });
+            });
+        }
     },
     {
         tag: '{{uptime}}',
@@ -226,7 +241,8 @@ const onChat = (channel, userstate, message, self) => {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
-                    .replace(new RegExp('{{sender}}', 'g'), userstate['display-name']);
+                    .replace(new RegExp('{{sender}}', 'g'), userstate['display-name'])
+                    .replace(new RegExp('{{channel}}', 'g'), channelKey);
                 let messagePromises = [];
                 DATA_TAGS.forEach(dt => {
                     if (message.includes(dt.tag)) {
