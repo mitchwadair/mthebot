@@ -29,7 +29,7 @@ const getLengthDataFromMillis = ms => {
     return {
         years: date.getUTCFullYear() - 1970,
         months: date.getUTCMonth(),
-        days: date.getUTCDate(),
+        days: date.getUTCDate() - 1,
         hours: date.getUTCHours(),
         minutes: date.getUTCMinutes(),
         seconds: date.getUTCSeconds(),
