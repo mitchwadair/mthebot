@@ -113,22 +113,6 @@ const DATA_TAGS = [
             })
         },
     },
-    {
-        tag: '{{commands}}',
-        dataFetch: (channel, userstate) => {
-            return new Promise((resolve, reject) => {
-                const commands = channels[channel].commands.filter(c => {
-                    return c.userLevel === 0;
-                }).map(c => {
-                    return `!${c.alias}`;
-                });
-                resolve({
-                    tag: '{{commands}}',
-                    value: commands.join(', '),
-                });
-            })
-        }
-    }
 ]
 
 // ===================== DATA FUNCTIONS =====================
@@ -249,7 +233,8 @@ const onChat = (channel, userstate, message, self) => {
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
                     .replace(new RegExp('{{sender}}', 'g'), userstate['display-name'])
-                    .replace(new RegExp('{{channel}}', 'g'), channelKey);
+                    .replace(new RegExp('{{channel}}', 'g'), channelKey)
+                    .replace(new RegExp('{{commands}}', 'g'), channels[channelKey].commands.filter(c => c.userLevel === 0).map(c => `!${c.alias}`).join(', '));
                 let messagePromises = [];
                 DATA_TAGS.forEach(dt => {
                     if (message.includes(dt.tag)) {
