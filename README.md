@@ -61,41 +61,4 @@ MtheBot_ is built using [tmi.js](https://github.com/tmijs/tmi.js).  The back-end
 MtheBot_ was a learning opportunity for me. At work, I use React so I took this opportunity to learn a new front-end framework. So, as a result, I went with [Vue](https://vuejs.org/).  In addition to Vue, I utilized the [Vuetify](https://vuetifyjs.com/) design library to make the application pretty.
 
 # Contribute
-MtheBot_ is an open-source project.  I welcome contributions to the project!  I will do my best to review pull requests in a timely manner.
-## Setup
-### Project Environment
-In order to get the bot up and running, you must set up the environment.  Fork/clone the repo to your system to get started.  
-First, make sure you have installed all of the required modules:
-```sh
-npm install
-```
-Next, you need to create a `.env` file in the root directory.  The file should have the following properties:
-```
-BOT_USERNAME=<the username associated with your bot>
-OAUTH_TOKEN=<the OAuth token for your account https://twitchapps.com/tmi/>
-CLIENT_ID=<your Twitch app id (get from https://dev.twitch.tv/console)>
-RDS_HOSTNAME=<the database host>
-RDS_USERNAME=<the db username>
-RDS_PASSWORD=<the db password>
-RDS_PORT=<the db port>
-RDS_DB_NAME=<the db name>
-GMAIL_USERNAME=<the gmail account you wish to recieve contact emails at>
-GMAIL_PASSWORD=<gmail application password generated from gmail settings>
-NODE_ENV=development
-```
-### Database
-First, you must set up a [MySQL](https://www.mysql.com/) database for MtheBot_ to retrieve data from.  There is a specific structure needed for your database to work correctly.  In order to initialize your DB with the correct structure, run this SQL query:
-```sql
-CREATE TABLE channels (
-    name varchar(51),
-    enabled tinyint(1),
-    commands json,
-    events json,
-    timers json
-);
-```
-To create a new table entry to test with, you can make a call to the `init` API when running the bot.  To do this, I recommend using the [Postman](https://www.postman.com/) collections which can be found in the [API Server/Postman Collections](API%20Server/Postman%20Collections) folder of this repository.  If you'd rather not use Postman, you can run the following curl command:
-```sh
-curl -X POST localhost:8080/init/<desiredChannelName>
-```
-Both of these methods will generate a new entry in the database for you to work with.
+MtheBot_ is an open-source project and I welcome contributions to it!  I will do my best to review pull requests in a timely manner.  Documentation on getting started with developing for MtheBot_ as well as API reference can be found in the [doc](doc) section of this repository.
