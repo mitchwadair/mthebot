@@ -106,7 +106,8 @@ module.exports = {
                         data.push(chunk);
                     }).on('end', _ => {
                         data = JSON.parse(Buffer.concat(data).toString());
-                        resolve(data.data[0]);
+                        console.log(data);
+                        resolve(data.data ? data.data[0] : null);
                     });
                 }).on('error', err => {
                     reject(err);
