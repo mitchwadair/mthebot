@@ -9,16 +9,22 @@
 			"name": "POST",
 			"request": {
 				"method": "POST",
-				"header": [],
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer: inittokenchangethisbyauthenticatingwithtwitch",
+						"type": "text"
+					}
+				],
 				"url": {
-					"raw": "localhost:8080/init/test",
+					"raw": "localhost:8080/init/mtheb_",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"init",
-						"test"
+						"mtheb_"
 					]
 				}
 			},
