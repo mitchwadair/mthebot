@@ -19,10 +19,14 @@ const refreshAppToken = _ => {
                     data.push(chunk);
                 }).on('end', _ => {
                     data = JSON.parse(Buffer.concat(data).toString());
-                    headers['Authorization'] = `Bearer ${data.access_token}`;
-                    hasValidToken = true;
-                    setTimeout(_ => {hasValidToken = false}, data.expires_in);
-                    resolve();
+                    if (data.error) {
+                        reject(data.error);
+                    } else {
+                        headers['Authorization'] = `Bearer ${data.access_token}`;
+                        hasValidToken = true;
+                        setTimeout(_ => {hasValidToken = false}, data.expires_in);
+                        resolve();
+                    }
                 });
             }).on('error', err => {
                 reject(err);
@@ -43,7 +47,11 @@ module.exports = {
                         data.push(chunk);
                     }).on('end', _ => {
                         data = JSON.parse(Buffer.concat(data).toString());
-                        resolve(data.data[0]);
+                        if (data.error) {
+                            reject(data.error);
+                        } else {
+                            resolve(data.data[0]);
+                        }
                     });
                 }).on('error', err => {
                     reject(err);
@@ -64,7 +72,11 @@ module.exports = {
                         data.push(chunk);
                     }).on('end', _ => {
                         data = JSON.parse(Buffer.concat(data).toString());
-                        resolve(data.data[0]);
+                        if (data.error) {
+                            reject(data.error);
+                        } else {
+                            resolve(data.data[0]);
+                        }
                     });
                 }).on('error', err => {
                     reject(err);
@@ -85,7 +97,11 @@ module.exports = {
                         data.push(chunk);
                     }).on('end', _ => {
                         data = JSON.parse(Buffer.concat(data).toString());
-                        resolve(data.total);
+                        if (data.error) {
+                            reject(data.error);
+                        } else {
+                            resolve(data.total);
+                        }
                     });
                 }).on('error', err => {
                     reject(err);
@@ -106,8 +122,11 @@ module.exports = {
                         data.push(chunk);
                     }).on('end', _ => {
                         data = JSON.parse(Buffer.concat(data).toString());
-                        console.log(data);
-                        resolve(data.data ? data.data[0] : null);
+                        if (data.error) {
+                            reject(data.error);
+                        } else {
+                            resolve(data.data[0]);
+                        }
                     });
                 }).on('error', err => {
                     reject(err);
