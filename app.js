@@ -54,23 +54,20 @@ const DATA_TAGS = [
         tag: '{{followage}}',
         dataFetch: (channel, userstate) => {
             return new Promise((resolve, reject) => {
-                twitchAPI.getUser(channel).then(d => {
-                    const channelID = d.id;
-                    twitchAPI.getFollowData(userstate['user-id'], channelID).then(data => {
-                        if (data) {
-                            const length = getLengthDataFromMillis(Date.now() - Date.parse(data.followed_at));
-                            const val = `
-                                ${length.years > 0 ? `${length.years} year${length.years > 1 ? 's' : ''}` : ''}
-                                ${length.months > 0 ? `${length.months} month${length.months > 1 ? 's' : ''}` : ''}
-                                ${length.days > 0 ? `${length.days} day${length.days > 1 ? 's' : ''}` : ''}
-                            `;
-                            resolve({tag: '{{followage}}', value: val});
-                        } else {
-                            resolve({tag: '{{followage}}', value: `${user} does not follow ${channel}`});
-                        }
-                    }).catch(err => {
-                        reject({tag: '{{followage}}', reason: 'error fetching followage data'});
-                    });
+                twitchAPI.getFollowData(userstate['user-id'], channels[channel].id).then(data => {
+                    if (data) {
+                        const length = getLengthDataFromMillis(Date.now() - Date.parse(data.followed_at));
+                        const val = `
+                            ${length.years > 0 ? `${length.years} year${length.years > 1 ? 's' : ''}` : ''}
+                            ${length.months > 0 ? `${length.months} month${length.months > 1 ? 's' : ''}` : ''}
+                            ${length.days > 0 ? `${length.days} day${length.days > 1 ? 's' : ''}` : ''}
+                        `;
+                        resolve({tag: '{{followage}}', value: val});
+                    } else {
+                        resolve({tag: '{{followage}}', value: `${user} does not follow ${channel}`});
+                    }
+                }).catch(err => {
+                    reject({tag: '{{followage}}', reason: 'error fetching followage data'});
                 });
             });
         },
@@ -79,13 +76,10 @@ const DATA_TAGS = [
         tag: '{{followcount}}',
         dataFetch: (channel, userstate) => {
             return new Promise((resolve, reject) => {
-                twitchAPI.getUser(channel).then(d => {
-                    const channelID = d.id;
-                    twitchAPI.getFollowCount(channelID).then(data => {
-                        resolve({tag: '{{followcount}}', value: data});
-                    }).catch(err => {
-                        reject({tag: '{{followcount}}', reason: 'error fetching followcount data'});
-                    });
+                twitchAPI.getFollowCount(channels[channel].id).then(data => {
+                    resolve({tag: '{{followcount}}', value: data});
+                }).catch(err => {
+                    reject({tag: '{{followcount}}', reason: 'error fetching followcount data'});
                 });
             });
         }
@@ -137,27 +131,33 @@ const fetchChannelData = channelKey => {
                 return reject(err);
             } else {
                 const timers = JSON.parse(results[0].timers);
-                channels[channelKey] = {
-                    commands: JSON.parse(results[0].commands),
-                    events: JSON.parse(results[0].events),
-                    timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                    timers: timers.map((timer, i) => {
-                        if (timer.enabled) {
-                            return {
-                                interval: setInterval(_ => {
-                                    if (channels[channelKey].timers[i].messageCount >= timer.messageThreshold) {
-                                        channels[channelKey].timers[i].messageCount = 0;
-                                        client.say(`#${channelKey}`, timer.message);
-                                    }
-                                }, timer.seconds*1000),
-                                messageCount: 0,
+                twitchAPI.getUser(channelKey).then(d => {
+                    channels[channelKey] = {
+                        commands: JSON.parse(results[0].commands),
+                        events: JSON.parse(results[0].events),
+                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
+                        timers: timers.map((timer, i) => {
+                            if (timer.enabled) {
+                                return {
+                                    interval: setInterval(_ => {
+                                        if (channels[channelKey].timers[i].messageCount >= timer.messageThreshold) {
+                                            channels[channelKey].timers[i].messageCount = 0;
+                                            client.say(`#${channelKey}`, timer.message);
+                                        }
+                                    }, timer.seconds*1000),
+                                    messageCount: 0,
+                                }
                             }
-                        }
-                    }),
-                    accessToken: results[0].token.toString(),
-                }
-                console.log(`** fetched data for channel ${channelKey}`);
-                resolve()
+                        }),
+                        accessToken: results[0].token.toString(),
+                        id: d.id,
+                    }
+                    console.log(`** fetched data for channel ${channelKey}`);
+                    resolve();
+                }).catch(err => {
+                    console.log(`** error getting user data for channel ${channelKey}`)
+                    reject(err);
+                });
             }
         });
     });
