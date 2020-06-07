@@ -169,5 +169,30 @@ module.exports = {
                 reject(err);
             })
         });
+    },
+    getGameName: gameID => {
+        return new Promise((resolve, reject) => {
+            refreshAppToken().then(_ => {
+                https.get(`https://api.twitch.tv/helix/games?id=${gameID}`, {headers: headers}, res => {
+                    let data = []
+                    res.on('error', err => {
+                        reject(err);
+                    }).on('data', chunk => {
+                        data.push(chunk);
+                    }).on('end', _ => {
+                        data = JSON.parse(Buffer.concat(data).toString());
+                        if (data.error) {
+                            reject(data.error);
+                        } else {
+                            resolve(data.data[0].name);
+                        }
+                    });
+                }).on('error', err => {
+                    reject(err);
+                });
+            }).catch(err => {
+                reject(err);
+            })
+        });
     }
 }

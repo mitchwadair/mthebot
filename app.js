@@ -119,6 +119,27 @@ const DATA_TAGS = [
             })
         },
     },
+    {
+        tag: '{{game}}',
+        dataFetch: (channel, userstate) => {
+            return new Promise((resolve, reject) => {
+                twitchAPI.getStreamData(channel).then(data => {
+                    if (data) {
+                        twitchAPI.getGameName(data.game_id).then(name => {
+                            resolve({tag: '{{game}}', value: name});
+                        }).catch(err => {
+                            reject({tag: '{{game}}', reason: 'error fetching game data'});
+                        });
+                    } else {
+                        resolve({tag: '{{game}}', value: `${channel} is not live`});
+                    }
+                }).catch(err => {
+                    reject({tag: '{{game}}', reason: 'error fetching game data'});
+                });
+            })
+        },
+    },
+    
 ]
 
 // ===================== DATA FUNCTIONS =====================
