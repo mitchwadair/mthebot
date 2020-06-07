@@ -85,6 +85,18 @@ const DATA_TAGS = [
         }
     },
     {
+        tag: '{{subcount}}',
+        dataFetch: (channel, userstate) => {
+            return new Promise((resolve, reject) => {
+                twitchAPI.getSubCount(channels[channel].id).then(data => {
+                    resolve({tag: '{{subcount}}', value: data});
+                }).catch(err => {
+                    reject({tag: '{{subcount}}', reason: 'error fetching subcount data'});
+                });
+            });
+        }
+    },
+    {
         tag: '{{uptime}}',
         dataFetch: (channel, userstate) => {
             return new Promise((resolve, reject) => {
