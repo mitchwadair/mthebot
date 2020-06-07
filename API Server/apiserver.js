@@ -12,7 +12,7 @@ const timers = require('./privateAPIs/timers');
 const events = require('./privateAPIs/events');
 const chats = require('./privateAPIs/chats');
 const init = require('./privateAPIs/init');
-const contact = require('./privateAPIs/contact');
+const contact = require('./publicAPIs/contact');
 const auth = require('./privateAPIs/auth');
 
 const getChannelFromURL = require('./utils').getChannelFromURL;

@@ -29,7 +29,7 @@ const getLengthDataFromMillis = ms => {
     return {
         years: date.getUTCFullYear() - 1970,
         months: date.getUTCMonth(),
-        days: date.getUTCDate(),
+        days: date.getUTCDate() - 1,
         hours: date.getUTCHours(),
         minutes: date.getUTCMinutes(),
         seconds: date.getUTCSeconds(),
@@ -90,7 +90,7 @@ const DATA_TAGS = [
             return new Promise((resolve, reject) => {
                 twitchAPI.getStreamData(channel).then(data => {
                     if (data) {
-                        const length = getLengthDataFromMillis(Date.now() - Date.parse(data.followed_at));
+                        const length = getLengthDataFromMillis(Date.now() - Date.parse(data.started_at));
                             const val = `
                                 ${length.days > 0 ? `${length.days} day${length.days > 1 ? 's' : ''}` : ''}
                                 ${length.hours > 0 ? `${length.hours} hour${length.hours > 1 ? 's' : ''}` : ''}
