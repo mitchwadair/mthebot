@@ -1,6 +1,6 @@
 <p align="center">
     <a href="https://bot.mtheb.tv">
-        <img src='./assets/logo_text.png' width='300px' height='360px' alt="MtheBot_ Logo"/>
+        <img src='./assets/logo_text.png' width='200px' alt="MtheBot_ Logo"/>
     </a>
     </br></br>
     <a href="LICENSE"><img src='https://img.shields.io/apm/l/atomic-design-ui.svg' alt="license"></a>
