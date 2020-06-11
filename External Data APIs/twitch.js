@@ -11,31 +11,42 @@ let headers = {
 
 let hasValidToken = false;
 
+const httpsRequest = (url, options) => {
+    return new Promise((resolve, reject) => {
+        https.request(url, options, res => {
+            let data = []
+            res.on('error', err => {
+                reject(err);
+            }).on('data', chunk => {
+                data.push(chunk);
+            }).on('end', _ => {
+                data = JSON.parse(Buffer.concat(data).toString());
+                if (data.error) {
+                    reject(data.error);
+                } else {
+                    resolve(data);
+                }
+            });
+        }).on('error', err => {
+            reject(err);
+        }).end();
+    });
+}
+
 const refreshAppToken = _ => {
     return new Promise((resolve, reject) => {
         if (hasValidToken) {
             resolve();
         } else {
-            https.request(`https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`, {method: 'POST'}, res => {
-                let data = []
-                res.on('error', err => {
-                    reject(err);
-                }).on('data', chunk => {
-                    data.push(chunk);
-                }).on('end', _ => {
-                    data = JSON.parse(Buffer.concat(data).toString());
-                    if (data.error) {
-                        reject(data.error);
-                    } else {
-                        headers['Authorization'] = `Bearer ${data.access_token}`;
-                        hasValidToken = true;
-                        setTimeout(_ => {hasValidToken = false}, data.expires_in);
-                        resolve();
-                    }
-                });
-            }).on('error', err => {
+            httpsRequest(`https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`, {method: 'POST'})
+            .then(data => {
+                headers['Authorization'] = `Bearer ${data.access_token}`;
+                hasValidToken = true;
+                setTimeout(_ => {hasValidToken = false}, data.expires_in);
+                resolve();
+            }).catch(err => {
                 reject(err);
-            }).end();
+            });
         }
     });
 }
@@ -44,21 +55,9 @@ module.exports = {
     getUser: loginName => {
         return new Promise((resolve, reject) => {
             refreshAppToken().then(_ => {
-                https.get(`https://api.twitch.tv/helix/users?login=${loginName}`, {headers: headers}, res => {
-                    let data = []
-                    res.on('error', err => {
-                        reject(err);
-                    }).on('data', chunk => {
-                        data.push(chunk);
-                    }).on('end', _ => {
-                        data = JSON.parse(Buffer.concat(data).toString());
-                        if (data.error) {
-                            reject(data.error);
-                        } else {
-                            resolve(data.data[0]);
-                        }
-                    });
-                }).on('error', err => {
+                httpsRequest(`https://api.twitch.tv/helix/users?login=${loginName}`, {headers: headers, method: 'GET'}).then(data => {
+                    resolve(data.data[0]);
+                }).catch(err => {
                     reject(err);
                 });
             }).catch(err => {
@@ -69,21 +68,9 @@ module.exports = {
     getFollowData: (fromID, toID) => {
         return new Promise((resolve, reject) => {
             refreshAppToken().then(_ => {
-                https.get(`https://api.twitch.tv/helix/users/follows?from_id=${fromID}&to_id=${toID}`, {headers: headers}, res => {
-                    let data = []
-                    res.on('error', err => {
-                        reject(err);
-                    }).on('data', chunk => {
-                        data.push(chunk);
-                    }).on('end', _ => {
-                        data = JSON.parse(Buffer.concat(data).toString());
-                        if (data.error) {
-                            reject(data.error);
-                        } else {
-                            resolve(data.data[0]);
-                        }
-                    });
-                }).on('error', err => {
+                httpsRequest(`https://api.twitch.tv/helix/users/follows?from_id=${fromID}&to_id=${toID}`, {headers: headers, method: 'GET'}).then(data => {
+                    resolve(data.data[0]);
+                }).catch(err => {
                     reject(err);
                 });
             }).catch(err => {
@@ -94,21 +81,9 @@ module.exports = {
     getFollowCount: channelID => {
         return new Promise((resolve, reject) => {
             refreshAppToken().then(_ => {
-                https.get(`https://api.twitch.tv/helix/users/follows?to_id=${channelID}&first=1`, {headers: headers}, res => {
-                    let data = []
-                    res.on('error', err => {
-                        reject(err);
-                    }).on('data', chunk => {
-                        data.push(chunk);
-                    }).on('end', _ => {
-                        data = JSON.parse(Buffer.concat(data).toString());
-                        if (data.error) {
-                            reject(data.error);
-                        } else {
-                            resolve(data.total);
-                        }
-                    });
-                }).on('error', err => {
+                httpsRequest(`https://api.twitch.tv/helix/users/follows?to_id=${channelID}&first=1`, {headers: headers, method: 'GET'}).then(data => {
+                    resolve(data.total);
+                }).catch(err => {
                     reject(err);
                 });
             }).catch(err => {
@@ -121,26 +96,14 @@ module.exports = {
             refreshAppToken().then(_ => {
                 let total = 0;
                 const getCountForPage = (page, callback) => {
-                    https.get(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}${page ? `&after=${page}` : ''}`, {headers: headers}, res => {
-                        let data = []
-                        res.on('error', err => {
-                            reject(err);
-                        }).on('data', chunk => {
-                            data.push(chunk);
-                        }).on('end', _ => {
-                            data = JSON.parse(Buffer.concat(data).toString());
-                            if (data.error) {
-                                reject(data.error);
-                            } else {
-                                total += data.data.length;
-                                if (data.data.length < 100) {
-                                    callback();
-                                } else {
-                                    getCountForPage(data.pagination.cursor, callback);
-                                }
-                            }
-                        });
-                    }).on('error', err => {
+                    httpsRequest(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}${page ? `&after=${page}` : ''}`, {headers: headers, method: 'GET'}).then(data => {
+                        total += data.data.length;
+                        if (data.data.length < 100) {
+                            callback();
+                        } else {
+                            getCountForPage(data.pagination.cursor, callback);
+                        }
+                    }).catch(err => {
                         reject(err);
                     });
                 }
@@ -153,21 +116,9 @@ module.exports = {
     getStreamData: loginName => {
         return new Promise((resolve, reject) => {
             refreshAppToken().then(_ => {
-                https.get(`https://api.twitch.tv/helix/streams?user_login=${loginName}`, {headers: headers}, res => {
-                    let data = []
-                    res.on('error', err => {
-                        reject(err);
-                    }).on('data', chunk => {
-                        data.push(chunk);
-                    }).on('end', _ => {
-                        data = JSON.parse(Buffer.concat(data).toString());
-                        if (data.error) {
-                            reject(data.error);
-                        } else {
-                            resolve(data.data[0]);
-                        }
-                    });
-                }).on('error', err => {
+                httpsRequest(`https://api.twitch.tv/helix/streams?user_login=${loginName}`, {headers: headers, method: 'GET'}).then(data => {
+                    resolve(data.data[0]);
+                }).catch(err => {
                     reject(err);
                 });
             }).catch(err => {
@@ -178,21 +129,9 @@ module.exports = {
     getGameName: gameID => {
         return new Promise((resolve, reject) => {
             refreshAppToken().then(_ => {
-                https.get(`https://api.twitch.tv/helix/games?id=${gameID}`, {headers: headers}, res => {
-                    let data = []
-                    res.on('error', err => {
-                        reject(err);
-                    }).on('data', chunk => {
-                        data.push(chunk);
-                    }).on('end', _ => {
-                        data = JSON.parse(Buffer.concat(data).toString());
-                        if (data.error) {
-                            reject(data.error);
-                        } else {
-                            resolve(data.data[0].name);
-                        }
-                    });
-                }).on('error', err => {
+                httpsRequest(`https://api.twitch.tv/helix/games?id=${gameID}`, {headers: headers, method: 'GET'}).then(data => {
+                    resolve(data.data[0].name);
+                }).catch(err => {
                     reject(err);
                 });
             }).catch(err => {
