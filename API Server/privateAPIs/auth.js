@@ -4,10 +4,10 @@
 // https://opensource.org/licenses/MIT
 
 const https = require('https');
-const getChannelFromURL = require('../utils').getChannelFromURL;
+const getArgsFromURL = require('../utils').getArgsFromURL;
 
 const post = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
+    const channel = getArgsFromURL(req.url)[0];
     let body = [];
     req.on('error', err => {
         res.writeHead(500);
