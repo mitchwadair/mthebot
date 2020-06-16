@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
 const https = require('https');
 const getChannelFromURL = require('../utils').getChannelFromURL;
 
@@ -17,6 +16,20 @@ const post = (db, actions, req, res) => {
         body.push(chunk);
     }).on('end', _ => {
         body = JSON.parse(Buffer.concat(body).toString());
+
+        const updateTokenInDB = _ => {
+            db.query(`UPDATE channels SET token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}') WHERE name=?`, [body.token,channel], err => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }
+                actions.refreshChannelData(channel);
+                res.writeHead(200);
+                res.end();
+            });
+        }
+
         db.query(`SELECT AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') AS token FROM channels WHERE name=?`, [channel], (err, results) => {
             if (err) {
                 console.log(err);
@@ -27,31 +40,13 @@ const post = (db, actions, req, res) => {
             const token = results[0].token ? results[0].token.toString() : null;
             if (token) {
                 https.request(`https://id.twitch.tv/oauth2/revoke?client_id=${process.env.CLIENT_ID}&token=${token}`, {method: 'POST'}, _ => {
-                    db.query(`UPDATE channels SET token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}') WHERE name=?`, [body.token,channel], err => {
-                        if (err) {
-                            res.writeHead(500);
-                            res.end(`ERROR: ${err}`);
-                            return;
-                        }
-                        actions.refreshChannelData(channel);
-                        res.writeHead(200);
-                        res.end();
-                    });
+                    updateTokenInDB();
                 }).on('error', err => {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
                 }).end();
             } else {
-                db.query(`UPDATE channels SET token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}') WHERE name=?`, [body.token,channel], err => {
-                    if (err) {
-                        res.writeHead(500);
-                        res.end(`ERROR: ${err}`);
-                        return;
-                    }
-                    actions.refreshChannelData(channel);
-                    res.writeHead(200);
-                    res.end();
-                });
+                updateTokenInDB();
             }
         });
         
