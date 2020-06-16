@@ -3,10 +3,10 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const getChannelFromURL = require('../utils').getChannelFromURL;
+const getArgsFromURL = require('../utils').getArgsFromURL;
 
 const get = (db, req, res) => {
-    const channel = getChannelFromURL(req.url);
+    const channel = getArgsFromURL(req.url)[0];
     db.query(`SELECT enabled FROM channels WHERE name=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
@@ -23,7 +23,7 @@ const get = (db, req, res) => {
 }
 
 const post = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
+    const channel = getArgsFromURL(req.url)[0];
     db.query(`UPDATE channels SET enabled=true WHERE name=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
@@ -41,7 +41,7 @@ const post = (db, actions, req, res) => {
 }
 
 const remove = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
+    const channel = getArgsFromURL(req.url)[0];
     db.query(`UPDATE channels SET enabled=false WHERE name=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
