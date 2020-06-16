@@ -6,7 +6,7 @@
 const url = require('url');
 
 module.exports = {
-    getChannelFromURL: _url => {
-        return url.parse(_url).pathname.split('/')[2];
+    getArgsFromURL: _url => {
+        return url.parse(_url).pathname.split('/').splice(0, 2);
     }
 }
