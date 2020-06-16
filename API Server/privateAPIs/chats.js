@@ -3,7 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
 const getChannelFromURL = require('../utils').getChannelFromURL;
 
 const get = (db, req, res) => {
