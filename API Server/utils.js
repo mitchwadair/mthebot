@@ -7,6 +7,8 @@ const url = require('url');
 
 module.exports = {
     getArgsFromURL: _url => {
-        return url.parse(_url).pathname.split('/').splice(0, 2);
+        let args = url.parse(_url).pathname.split('/');
+        args.splice(0, 2);
+        return args;
     }
 }
