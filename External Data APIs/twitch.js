@@ -3,35 +3,13 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const https = require('https');
+const httpsRequest = require('./utils').httpsRequest;
 
 let headers = {
     'Client-ID': process.env.CLIENT_ID,
 }
 
 let hasValidToken = false;
-
-const httpsRequest = (url, options) => {
-    return new Promise((resolve, reject) => {
-        https.request(url, options, res => {
-            let data = []
-            res.on('error', err => {
-                reject(err);
-            }).on('data', chunk => {
-                data.push(chunk);
-            }).on('end', _ => {
-                data = JSON.parse(Buffer.concat(data).toString());
-                if (data.error) {
-                    reject(data.error);
-                } else {
-                    resolve(data);
-                }
-            });
-        }).on('error', err => {
-            reject(err);
-        }).end();
-    });
-}
 
 const refreshAppToken = _ => {
     return new Promise((resolve, reject) => {
