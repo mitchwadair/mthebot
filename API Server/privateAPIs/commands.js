@@ -96,7 +96,7 @@ const put = (db, actions, req, res) => {
             }
             let commands = JSON.parse(results[0].commands);
             const i = commands.findIndex(command => command.alias === cmd);
-            if (~~i) {
+            if (!~i) {
                 res.writeHead(404);
                 res.end(`Command ${cmd} for channel ${channel} not found`);
             } else {
@@ -132,7 +132,7 @@ const remove = (db, actions, req, res) => {
         }
         let commands = JSON.parse(results[0].commands);
         const i = commands.findIndex(command => command.alias === cmd);
-        if (~~i) {
+        if (!~i) {
             res.writeHead(404);
             res.end(`Command ${cmd} for channel ${channel} not found`);
         } else {
