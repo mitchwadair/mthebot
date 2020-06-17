@@ -10,9 +10,9 @@ const get = (db, req, res) => {
     const channel = args[0];
     const cmd = args[1];
     if (cmd) {
-        let JSONquery = `JSON_EXTRACT(commands, JSON_UNQUOTE(REPLACE(JSON_SEARCH(commands, 'one', '${cmd}', NULL, '$[*].alias'), '.alias', ''))) as cmd`;
-        let JSONcontains = `JSON_CONTAINS(commands, '{"alias": "${cmd}"}')`;
-        db.query(`SELECT ${JSONquery} FROM channels WHERE name=? and ${JSONcontains}`, [channel], (err, results) => {
+        let JSONquery = `JSON_EXTRACT(commands, JSON_UNQUOTE(REPLACE(JSON_SEARCH(commands, 'one', ?, NULL, '$[*].alias'), '.alias', ''))) as cmd`;
+        let JSONcontains = `JSON_CONTAINS(commands, JSON_OBJECT('alias', ?))`;
+        db.query(`SELECT ${JSONquery} FROM channels WHERE name=? and ${JSONcontains}`, [cmd, channel, cmd], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
