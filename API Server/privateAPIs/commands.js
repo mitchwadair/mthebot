@@ -53,15 +53,70 @@ const post = (db, actions, req, res) => {
         body.push(chunk);
     }).on('end', _ => {
         body = Buffer.concat(body).toString();
-        db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE name=?`, [body,channel], err => {
+        db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
                 return;
+            } else if (!results.length) {
+                res.writeHead(404);
+                res.end(`Channel ${channel} not found`);
+                return;
             }
-            actions.refreshChannelData(channel);
-            res.writeHead(200);
-            res.end();
+            db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE name=?`, [body,channel], err => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }
+                actions.refreshChannelData(channel);
+                res.writeHead(200);
+                res.end();
+            });
+        });
+    });
+}
+
+const put = (db, actions, req, res) => {
+    const args = getArgsFromURL(req.url);
+    const channel = args[0];
+    const cmd = args[1];
+    let body = [];
+    req.on('error', err => {
+        res.writeHead(500);
+        res.end(`ERROR: ${err}`);
+    }).on('data', chunk => {
+        body.push(chunk);
+    }).on('end', _ => {
+        body = Buffer.concat(body).toString();
+        db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            } else if (!results.length) {
+                res.writeHead(404);
+                res.end(`Channel ${channel} not found`);
+                return;
+            }
+            let commands = JSON.parse(results[0].commands);
+            const i = commands.findIndex(command => command.alias === cmd);
+            if (~~i) {
+                res.writeHead(404);
+                res.end(`Command ${cmd} for channel ${channel} not found`);
+            } else {
+                commands[i] = JSON.parse(body);
+                db.query(`UPDATE channels SET commands=? WHERE name=?`, [JSON.stringify(commands), channel], (err, results) => {
+                    if (err) {
+                        res.writeHead(500);
+                        res.end(`ERROR: ${err}`);
+                        return;
+                    }
+                    actions.refreshChannelData(channel);
+                    res.writeHead(200);
+                    res.end();
+                });
+            }
         });
     });
 }
@@ -108,6 +163,9 @@ module.exports = (db, actions, req, res) => {
             break;
         case 'POST':
             post(db, actions, req, res);
+            break;
+        case 'PUT':
+            put(db, actions, req, res);
             break;
         case 'DELETE':
             remove(db, actions, req, res);
