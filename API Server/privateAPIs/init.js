@@ -3,8 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
-const getChannelFromURL = require('../utils').getChannelFromURL;
+const getArgsFromURL = require('../utils').getArgsFromURL;
 
 const post = (db, actions, req, res) => {
     const defaultEvents = {
@@ -45,7 +44,7 @@ const post = (db, actions, req, res) => {
             "message": "{{user}} upgraded their gifted sub!"
         }
     }
-    const channel = getChannelFromURL(req.url);
+    const channel = getArgsFromURL(req.url)[0];
     const token = req.headers.authorization.replace('Bearer ', '');
     let query = `INSERT INTO channels VALUES ("${channel}", AES_ENCRYPT("${token}", "${process.env.CLIENT_SECRET}"), true, "[]", ${db.escape(JSON.stringify(defaultEvents))}, "[]");`;
     db.query(query, err => {
