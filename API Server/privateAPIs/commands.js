@@ -43,7 +43,8 @@ const get = (db, req, res) => {
 }
 
 const post = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
+    const args = getArgsFromURL(req.url);
+    const channel = args[0];
     let body = [];
     req.on('error', err => {
         res.writeHead(500);
@@ -52,7 +53,7 @@ const post = (db, actions, req, res) => {
         body.push(chunk);
     }).on('end', _ => {
         body = Buffer.concat(body).toString();
-        db.query(`UPDATE channels SET commands=? WHERE name=?`, [body,channel], err => {
+        db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE name=?`, [body,channel], err => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
