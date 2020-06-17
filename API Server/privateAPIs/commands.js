@@ -3,24 +3,43 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
-const getChannelFromURL = require('../utils').getChannelFromURL;
+const getArgsFromURL = require('../utils').getArgsFromURL;
 
 const get = (db, req, res) => {
-    const channel = getChannelFromURL(req.url);
-    db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
-        if (err) {
-            res.writeHead(500);
-            res.end(`ERROR: ${err}`);
-            return;
-        } else if (!results.length) {
-            res.writeHead(404);
-            res.end(`Channel ${channel} not found`);
-            return;
-        }
-        res.writeHead(200);
-        res.end(results[0].commands);
-    });
+    const args = getArgsFromURL(req.url);
+    const channel = args[0];
+    const cmd = args[1];
+    if (cmd) {
+        let JSONquery = `JSON_EXTRACT(commands, JSON_UNQUOTE(REPLACE(JSON_SEARCH(commands, 'one', '${cmd}', NULL, '$[*].alias'), '.alias', ''))) as cmd`;
+        let JSONcontains = `JSON_CONTAINS(commands, '{"alias": "${cmd}"}')`;
+        db.query(`SELECT ${JSONquery} FROM channels WHERE name=? and ${JSONcontains}`, [channel], (err, results) => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            } else if (!results.length) {
+                res.writeHead(404);
+                res.end(`Command ${cmd} not found for channel ${channel}`);
+                return;
+            }
+            res.writeHead(200);
+            res.end(results[0].cmd);
+        });
+    } else {
+        db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            } else if (!results.length) {
+                res.writeHead(404);
+                res.end(`Channel ${channel} not found`);
+                return;
+            }
+            res.writeHead(200);
+            res.end(results[0].commands);
+        });
+    }
 }
 
 const post = (db, actions, req, res) => {
