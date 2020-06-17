@@ -67,8 +67,9 @@ const post = (db, actions, req, res) => {
 }
 
 const remove = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
-    const command = url.parse(req.url).pathname.split('/')[3];
+    const args = getArgsFromURL(req.url);
+    const channel = args[0];
+    const cmd = args[1];
     db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
@@ -80,22 +81,23 @@ const remove = (db, actions, req, res) => {
             return;
         }
         let commands = JSON.parse(results[0].commands);
-        if (!Object.keys(commands).includes(command)) {
+        const i = commands.findIndex(command => command.alias === cmd);
+        if (~~i) {
             res.writeHead(404);
-            res.end(`Command ${command} for channel ${channel} not found`);
-            return;
+            res.end(`Command ${cmd} for channel ${channel} not found`);
+        } else {
+            commands.splice(i, 1);
+            db.query(`UPDATE channels SET commands=? WHERE name=?`, [JSON.stringify(commands), channel], (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }
+                actions.refreshChannelData(channel);
+                res.writeHead(200);
+                res.end();
+            });
         }
-        delete commands[command];
-        db.query(`UPDATE channels SET commands=? WHERE name=?`, [JSON.stringify(commands), channel], (err, results) => {
-            if (err) {
-                res.writeHead(500);
-                res.end(`ERROR: ${err}`);
-                return;
-            }
-            actions.refreshChannelData(channel);
-            res.writeHead(200);
-            res.end();
-        });
     });
 }
 
