@@ -22,5 +22,32 @@ module.exports = {
                 resolve(true);
             });
         });
+    },
+    validateData: (schema, data) => {
+        const diffKeys = (exp, act) => {
+            let k1 = Object.keys(exp);
+            let k2 = Object.keys(act);
+            let diffExp = k1.filter(k => !k2.includes(k));
+            let diffAct = k2.filter(k => !k1.includes(k));
+            let ret = {}
+            if (diffExp.length) ret.missingKeys = diffExp;
+            if (diffAct.length) ret.extraKeys = diffAct;
+            return ret;
+        }
+        let e = diffKeys(schema, data);
+        if (e.missing || e.extra) {
+            return e;
+        }
+        Object.keys(schema).forEach(k => {
+            let exp = schema[k];
+            let act = typeof data[k];
+            if (exp != act) {
+                e[k] = `Expected type ${exp} but was actually ${act}`;
+            }
+        });
+        if (Object.keys(e).length) {
+            return e;
+        }
+        return true;
     }
 }

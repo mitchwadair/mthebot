@@ -3,7 +3,14 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const {getArgsFromURL, channelExistsInDB} = require('../utils');
+const {getArgsFromURL, channelExistsInDB, validateData} = require('../utils');
+
+const schema = {
+    alias: 'string',
+    message: 'string',
+    cooldown: 'number',
+    userLevel: 'number'
+}
 
 const get = (db, req, res) => {
     const args = getArgsFromURL(req.url);
@@ -55,6 +62,12 @@ const post = (db, actions, req, res) => {
             body.push(chunk);
         }).on('end', _ => {
             body = Buffer.concat(body).toString();
+            let validated = validateData(schema, JSON.parse(body));
+            if (validated !== true) {
+                res.writeHead(400);
+                res.end(JSON.stringify(validated));
+                return;
+            }
             db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE name=?`, [body,channel], err => {
                 if (err) {
                     res.writeHead(500);
@@ -63,7 +76,7 @@ const post = (db, actions, req, res) => {
                 }
                 actions.refreshChannelData(channel);
                 res.writeHead(200);
-                res.end();
+                res.end(body);
             });
         });
     }).catch(err => {
@@ -84,6 +97,12 @@ const put = (db, actions, req, res) => {
         body.push(chunk);
     }).on('end', _ => {
         body = Buffer.concat(body).toString();
+        let validated = validateData(schema, JSON.parse(body));
+        if (validated !== true) {
+            res.writeHead(400);
+            res.end(JSON.stringify(validated));
+            return;
+        }
         db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
@@ -109,7 +128,7 @@ const put = (db, actions, req, res) => {
                     }
                     actions.refreshChannelData(channel);
                     res.writeHead(200);
-                    res.end();
+                    res.end(body);
                 });
             }
         });
