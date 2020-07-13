@@ -32,7 +32,7 @@ const post = (db, actions, req, res) => {
         }
         actions.joinChannel(channel).then(_ => {
             res.writeHead(200);
-            res.end();
+            res.end(`Bot set to enabled for channel ${channel}`);
         }).catch(err => {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
@@ -50,7 +50,7 @@ const remove = (db, actions, req, res) => {
         }
         actions.leaveChannel(channel).then(_ => {
             res.writeHead(200);
-            res.end();
+            res.end(`Bot set to disabled for channel ${channel}`);
         }).catch(err => {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
