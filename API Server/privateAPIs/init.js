@@ -55,7 +55,7 @@ const post = (db, actions, req, res) => {
         }
         actions.joinChannel(channel).then(_ => {
             res.writeHead(200);
-            res.end();
+            res.end("Channel data created");
         }).catch(err => {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
