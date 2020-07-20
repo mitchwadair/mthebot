@@ -3,8 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const users = require('../API Server/publicAPIs/users');
-
 const httpsRequest = require('./utils').httpsRequest;
 
 let headers = {
