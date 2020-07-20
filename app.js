@@ -528,10 +528,14 @@ const actions = {
         }
     },
     joinChannel: channel => {
-        return client.join(channel);
+        return twitchAPI.getBatchUsersByID([channel]).then(data => {
+            return data[0] ? client.join(data[0].name) : true;
+        });
     },
     leaveChannel: channel => {
-        return client.part(channel);
+        return twitchAPI.getBatchUsersByID([channel]).then(data => {
+            return data[0] ? client.part(data[0].name) : true;
+        });
     }
 }
 

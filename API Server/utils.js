@@ -13,7 +13,7 @@ module.exports = {
     },
     channelExistsInDB: (db, channel) => {
         return new Promise((resolve, reject) => {
-            db.query(`SELECT NULL FROM channels WHERE name=?`, [channel], (err, results) => {
+            db.query(`SELECT NULL FROM channels WHERE id=?`, [channel], (err, results) => {
                 if (err) {
                     reject(err)
                 } else if (!results.length) {

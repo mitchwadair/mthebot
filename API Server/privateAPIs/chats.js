@@ -7,7 +7,7 @@ const getArgsFromURL = require('../utils').getArgsFromURL;
 
 const get = (db, req, res) => {
     const channel = getArgsFromURL(req.url)[0];
-    db.query(`SELECT enabled FROM channels WHERE name=?`, [channel], (err, results) => {
+    db.query(`SELECT enabled FROM channels WHERE id=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
@@ -24,13 +24,13 @@ const get = (db, req, res) => {
 
 const post = (db, actions, req, res) => {
     const channel = getArgsFromURL(req.url)[0];
-    db.query(`UPDATE channels SET enabled=true WHERE name=?`, [channel], err => {
+    db.query(`UPDATE channels SET enabled=true WHERE id=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
             return;
         }
-        actions.joinChannel(channel).then(_ => {
+        actions.joinChannel(channel).then(r => {
             res.writeHead(200);
             res.end(`Bot set to enabled for channel ${channel}`);
         }).catch(err => {
@@ -42,7 +42,7 @@ const post = (db, actions, req, res) => {
 
 const remove = (db, actions, req, res) => {
     const channel = getArgsFromURL(req.url)[0];
-    db.query(`UPDATE channels SET enabled=false WHERE name=?`, [channel], err => {
+    db.query(`UPDATE channels SET enabled=false WHERE id=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);

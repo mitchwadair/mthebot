@@ -15,7 +15,7 @@ const get = (db, req, res) => {
     const channel = args[0];
     const evt = args[1];
     channelExistsInDB(db, channel).then(_ => {
-        db.query(`SELECT events FROM channels WHERE name=?`, [channel], (err, results) => {
+        db.query(`SELECT events FROM channels WHERE id=?`, [channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
@@ -59,7 +59,7 @@ const put = (db, actions, req, res) => {
             res.end(JSON.stringify(validated));
             return;
         }
-        db.query(`SELECT events FROM channels WHERE name=?`, [channel], (err, results) => {
+        db.query(`SELECT events FROM channels WHERE id=?`, [channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
@@ -75,7 +75,7 @@ const put = (db, actions, req, res) => {
                 res.end(`Event ${evt} for channel ${channel} not found`);
             } else {
                 events[evt] = JSON.parse(body);
-                db.query(`UPDATE channels SET events=? WHERE name=?`, [JSON.stringify(events), channel], (err, results) => {
+                db.query(`UPDATE channels SET events=? WHERE id=?`, [JSON.stringify(events), channel], (err, results) => {
                     if (err) {
                         res.writeHead(500);
                         res.end(`ERROR: ${err}`);

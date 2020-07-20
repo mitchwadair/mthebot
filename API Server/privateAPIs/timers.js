@@ -21,7 +21,7 @@ const get = (db, req, res) => {
         if (timer) {
             let JSONquery = `JSON_EXTRACT(timers, JSON_UNQUOTE(REPLACE(JSON_SEARCH(timers, 'one', ?, NULL, '$[*].name'), '.name', ''))) as timer`;
             let JSONcontains = `JSON_CONTAINS(timers, JSON_OBJECT('name', ?))`;
-            db.query(`SELECT ${JSONquery} FROM channels WHERE name=? and ${JSONcontains}`, [timer, channel, timer], (err, results) => {
+            db.query(`SELECT ${JSONquery} FROM channels WHERE id=? and ${JSONcontains}`, [timer, channel, timer], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -35,7 +35,7 @@ const get = (db, req, res) => {
                 res.end(results[0].timer);
             });
         } else {
-            db.query(`SELECT timers FROM channels WHERE name=?`, [channel], (err, results) => {
+            db.query(`SELECT timers FROM channels WHERE id=?`, [channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -69,7 +69,7 @@ const post = (db, actions, req, res) => {
                 res.end(JSON.stringify(validated));
                 return;
             }
-            db.query(`UPDATE channels SET timers=JSON_ARRAY_APPEND(timers, '$', CAST(? AS JSON)) WHERE name=?`, [body,channel], err => {
+            db.query(`UPDATE channels SET timers=JSON_ARRAY_APPEND(timers, '$', CAST(? AS JSON)) WHERE id=?`, [body,channel], err => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -104,7 +104,7 @@ const put = (db, actions, req, res) => {
             res.end(JSON.stringify(validated));
             return;
         }
-        db.query(`SELECT timers FROM channels WHERE name=?`, [channel], (err, results) => {
+        db.query(`SELECT timers FROM channels WHERE id=?`, [channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
@@ -121,7 +121,7 @@ const put = (db, actions, req, res) => {
                 res.end(`Timer ${timer} for channel ${channel} not found`);
             } else {
                 timers[i] = JSON.parse(body);
-                db.query(`UPDATE channels SET timers=? WHERE name=?`, [JSON.stringify(timers), channel], (err, results) => {
+                db.query(`UPDATE channels SET timers=? WHERE id=?`, [JSON.stringify(timers), channel], (err, results) => {
                     if (err) {
                         res.writeHead(500);
                         res.end(`ERROR: ${err}`);
@@ -140,7 +140,7 @@ const remove = (db, actions, req, res) => {
     const args = getArgsFromURL(req.url);
     const channel = args[0];
     const timer = args[1];
-    db.query(`SELECT timers FROM channels WHERE name=?`, [channel], (err, results) => {
+    db.query(`SELECT timers FROM channels WHERE id=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
@@ -157,7 +157,7 @@ const remove = (db, actions, req, res) => {
             res.end(`Timer ${timer} for channel ${channel} not found`);
         } else {
             timers.splice(i, 1);
-            db.query(`UPDATE channels SET timers=? WHERE name=?`, [JSON.stringify(timers), channel], (err, results) => {
+            db.query(`UPDATE channels SET timers=? WHERE id=?`, [JSON.stringify(timers), channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);

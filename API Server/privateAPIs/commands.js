@@ -20,7 +20,7 @@ const get = (db, req, res) => {
         if (cmd) {
             let JSONquery = `JSON_EXTRACT(commands, JSON_UNQUOTE(REPLACE(JSON_SEARCH(commands, 'one', ?, NULL, '$[*].alias'), '.alias', ''))) as cmd`;
             let JSONcontains = `JSON_CONTAINS(commands, JSON_OBJECT('alias', ?))`;
-            db.query(`SELECT ${JSONquery} FROM channels WHERE name=? and ${JSONcontains}`, [cmd, channel, cmd], (err, results) => {
+            db.query(`SELECT ${JSONquery} FROM channels WHERE id=? and ${JSONcontains}`, [cmd, channel, cmd], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -34,7 +34,7 @@ const get = (db, req, res) => {
                 res.end(results[0].cmd);
             });
         } else {
-            db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+            db.query(`SELECT commands FROM channels WHERE id=?`, [channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -68,7 +68,7 @@ const post = (db, actions, req, res) => {
                 res.end(JSON.stringify(validated));
                 return;
             }
-            db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE name=?`, [body,channel], err => {
+            db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE id=?`, [body,channel], err => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -103,7 +103,7 @@ const put = (db, actions, req, res) => {
             res.end(JSON.stringify(validated));
             return;
         }
-        db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+        db.query(`SELECT commands FROM channels WHERE id=?`, [channel], (err, results) => {
             if (err) {
                 res.writeHead(500);
                 res.end(`ERROR: ${err}`);
@@ -120,7 +120,7 @@ const put = (db, actions, req, res) => {
                 res.end(`Command ${cmd} for channel ${channel} not found`);
             } else {
                 commands[i] = JSON.parse(body);
-                db.query(`UPDATE channels SET commands=? WHERE name=?`, [JSON.stringify(commands), channel], (err, results) => {
+                db.query(`UPDATE channels SET commands=? WHERE id=?`, [JSON.stringify(commands), channel], (err, results) => {
                     if (err) {
                         res.writeHead(500);
                         res.end(`ERROR: ${err}`);
@@ -139,7 +139,7 @@ const remove = (db, actions, req, res) => {
     const args = getArgsFromURL(req.url);
     const channel = args[0];
     const cmd = args[1];
-    db.query(`SELECT commands FROM channels WHERE name=?`, [channel], (err, results) => {
+    db.query(`SELECT commands FROM channels WHERE id=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
             res.end(`ERROR: ${err}`);
@@ -156,7 +156,7 @@ const remove = (db, actions, req, res) => {
             res.end(`Command ${cmd} for channel ${channel} not found`);
         } else {
             commands.splice(i, 1);
-            db.query(`UPDATE channels SET commands=? WHERE name=?`, [JSON.stringify(commands), channel], (err, results) => {
+            db.query(`UPDATE channels SET commands=? WHERE id=?`, [JSON.stringify(commands), channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
