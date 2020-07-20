@@ -8,8 +8,6 @@ const tmi = require('tmi.js');
 const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
 const twitchAPI = require('./External Data APIs/twitch');
-const twitch = require('./External Data APIs/twitch');
-const { getBatchUsersByID } = require('./External Data APIs/twitch');
 
 // ===================== HELPER FUNCTIONS =====================
 
