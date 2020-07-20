@@ -3,6 +3,8 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+const users = require('../API Server/publicAPIs/users');
+
 const httpsRequest = require('./utils').httpsRequest;
 
 let headers = {
@@ -40,6 +42,29 @@ module.exports = {
                 });
             }).catch(err => {
                 reject(err);
+            });
+        });
+    },
+    getBatchUsersByID: ids => {
+        return new Promise((resolve, reject) => {
+            refreshAppToken().then(_ => {
+                let chunks = ids.chunk(100);
+                let users = [];
+                let promises = [];
+                chunks.forEach(chunk => {
+                    let queryString = '';
+                    chunk.forEach(id => {
+                        queryString = `${queryString}id=${id}&`;
+                    });
+                    promises.push(httpsRequest(`https://api.twitch.tv/helix/users?${queryString}`, {headers: headers, method: 'GET'}).then(data => {
+                        data.data.forEach(user => {
+                            users.push({id: user.id, name: user.login});
+                        });
+                    }));
+                });
+                Promise.allSettled(promises).then(_ => {
+                    resolve(users);
+                })
             });
         });
     },

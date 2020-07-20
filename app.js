@@ -8,6 +8,8 @@ const tmi = require('tmi.js');
 const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
 const twitchAPI = require('./External Data APIs/twitch');
+const twitch = require('./External Data APIs/twitch');
+const { getBatchUsersByID } = require('./External Data APIs/twitch');
 
 // ===================== HELPER FUNCTIONS =====================
 
@@ -159,12 +161,22 @@ const deleteChannel = channel => {
 // get channel data from DB
 const fetchChannelData = channelKey => {
     return new Promise((resolve, reject) => {
-        db.query(`SELECT commands,events,timers,AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') AS token FROM channels WHERE name='${channelKey}'`, (err, results) => {
-            if (err) {
-                return reject(err);
-            } else {
-                const timers = JSON.parse(results[0].timers);
-                twitchAPI.getUser(channelKey).then(d => {
+        twitchAPI.getUser(channelKey).then(data => {
+            db.query(`SELECT name,commands,events,timers,AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') AS token FROM channels WHERE id=${data.id}`, (err, results) => {
+                if (err) {
+                    return reject(err);
+                } else {
+                    if (results[0].name !== channelKey) {
+                        db.query(`UPDATE channels set name='${channelKey}' where id=${data.id}`, err => {
+                            if (err) {
+                                console.log(`** error updating name for id ${data.id}: ${err}`);
+                            } else {
+                                console.log(`** updated name for id ${data.id} in DB to ${channelKey}`);
+                            }
+                        });
+                    }
+
+                    const timers = JSON.parse(results[0].timers);
                     channels[channelKey] = {
                         commands: JSON.parse(results[0].commands),
                         events: JSON.parse(results[0].events),
@@ -183,15 +195,15 @@ const fetchChannelData = channelKey => {
                             }
                         }),
                         accessToken: results[0].token.toString(),
-                        id: d.id,
+                        id: data.id,
                     }
                     console.log(`** fetched data for channel ${channelKey}`);
                     resolve();
-                }).catch(err => {
-                    console.log(`** error getting user data for channel ${channelKey}`)
-                    reject(err);
-                });
-            }
+                }
+            });
+        }).catch(err => {
+            console.log(`** error getting user data for channel ${channelKey}`)
+            reject(err);
         });
     });
 }
@@ -231,15 +243,33 @@ const getUserLevel = (userstate) => {
 const onConnected = (address, port) => {
     console.log(`** MtheBot_ connected to ${address}:${port}`);
     console.log('** joining all serviced channels...');
-    db.query("SELECT name,enabled from channels", (err, results, fields) => {
-        let promises = results ? results.map(res => {
-            if (!res.enabled) return;
-            return client.join(res.name);
+    db.query("SELECT id,enabled from channels", (err, results, fields) => {
+        let toJoin = results ? results.filter(res => res.enabled).map(res => {
+            return res.id;
         }) : [];
-        Promise.all(promises).then(_ => {
-            console.log('** all serviced channels have been joined');
-        }).catch(err => {
-            console.log(`** ERROR JOINING CHANNEL: ${err}`);
+        twitchAPI.getBatchUsersByID(toJoin).then(data => {
+            let batches = data.chunk(50);
+            let promises = [];
+            batches.forEach((batch, i) => {
+                promises.push(new Promise((resolve, reject) => {
+                    setTimeout(_ => {
+                        let joinPromises = [];
+                        batch.forEach(user => {
+                            joinPromises.push(client.join(user.name));
+                        });
+                        Promise.all(joinPromises).then(_ => {
+                            resolve();
+                        }).catch(e => {
+                            reject(e);
+                        })
+                    }, i * 15000);
+                }));
+            });
+            Promise.all(promises).then(_ => {
+                console.log(`** all channels joined`);
+            }).catch(e => {
+                console.log(`** error joining channels: ${e}`);
+            });
         });
     });
 }
