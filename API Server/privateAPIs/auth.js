@@ -49,7 +49,6 @@ const post = (db, actions, req, res) => {
                 updateTokenInDB();
             }
         });
-        
     });
 }
 
