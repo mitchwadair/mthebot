@@ -11,14 +11,34 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/commands/mtheb_",
+					"raw": "localhost:8080/commands/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"commands",
-						"mtheb_"
+						"0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET :id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/commands/0/myCommand",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"commands",
+						"0",
+						"myCommand"
 					]
 				}
 			},
@@ -31,7 +51,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n\t{\n\t\t\"alias\": \"myCommand\",\n\t\t\"message\": \"this is a command message\",\n\t\t\"cooldown\": 5,\n\t\t\"userLevel\": 0\n\t}\n]",
+					"raw": "{\n\t\"alias\": \"myCommand\",\n\t\"message\": \"this is a command message\",\n\t\"cooldown\": 5,\n\t\"userLevel\": 0\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -39,14 +59,43 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:8080/commands/mtheb_",
+					"raw": "localhost:8080/commands/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"commands",
-						"mtheb_"
+						"0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"alias\": \"myCommand\",\n\t\"message\": \"this is a changed command message\",\n\t\"cooldown\": 5,\n\t\"userLevel\": 0\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/commands/0/myCommand",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"commands",
+						"0",
+						"myCommand"
 					]
 				}
 			},
@@ -58,15 +107,15 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/commands/mtheb_/testCommand",
+					"raw": "localhost:8080/commands/0/myCommand",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"commands",
-						"mtheb_",
-						"testCommand"
+						"0",
+						"myCommand"
 					]
 				}
 			},

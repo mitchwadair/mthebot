@@ -11,14 +11,34 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/timers/mtheb_",
+					"raw": "localhost:8080/timers/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"timers",
-						"mtheb_"
+						"0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "GET :id",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/timers/0/prime",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"timers",
+						"0",
+						"prime"
 					]
 				}
 			},
@@ -31,7 +51,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "[\n    {\n    \t\"name\": \"prime\",\n        \"enabled\": true,\n        \"message\": \"If you have twitch prime, don't forget that you get one free subscription every month! Consider using it here to support me\",\n        \"seconds\": 300,\n        \"messageThreshold\": 5\n    }\n]",
+					"raw": "{\n    \"name\": \"prime\",\n    \"enabled\": true,\n    \"message\": \"If you have twitch prime, don't forget that you get one free subscription every month! Consider using it here to support me\",\n    \"seconds\": 300,\n    \"messageThreshold\": 5\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -39,14 +59,43 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:8080/timers/mtheb_",
+					"raw": "localhost:8080/timers/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"timers",
-						"mtheb_"
+						"0"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"prime\",\n    \"enabled\": true,\n    \"message\": \"subscribe with prime please\",\n    \"seconds\": 300,\n    \"messageThreshold\": 5\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:8080/timers/0/prime",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"timers",
+						"0",
+						"prime"
 					]
 				}
 			},
@@ -58,14 +107,14 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/timers/mtheb_/prime",
+					"raw": "localhost:8080/timers/0/prime",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"timers",
-						"mtheb_",
+						"0",
 						"prime"
 					]
 				}
