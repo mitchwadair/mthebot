@@ -15,26 +15,44 @@ const get = (db, req, res) => {
     const channel = args[0];
     const evt = args[1];
     channelExistsInDB(db, channel).then(_ => {
-        db.query(`SELECT events FROM channels WHERE id=?`, [channel], (err, results) => {
-            if (err) {
-                res.writeHead(500);
-                res.end(`ERROR: ${err}`);
-                return;
-            }
-            if (evt) {
-                const events = JSON.parse(results[0].events)
-                if (!Object.keys(events).includes(evt)) {
-                    res.writeHead(404)
-                    res.end(`Event ${evt} for channel ${channel} not found`);
+        if (evt) {
+            db.query(`SELECT * FROM events WHERE channel_id=? and name=?`, [channel, evt], (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                } else if (!results.length) {
+                    res.writeHead(404);
+                    res.end(`Event ${evt} not found for channel ${channel}`);
                     return;
                 }
+                const responseBody = {
+                    name: results[0].name,
+                    message: results[0].message,
+                    enabled: results[0].enabled,
+                }
                 res.writeHead(200);
-                res.end(JSON.stringify(events[evt]));
-            } else {
+                res.end(JSON.stringify(responseBody));
+            });
+        } else {
+            db.query(`SELECT * FROM events WHERE channel_id=?`, [channel], (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }
+                const responseBody = results.map(c => {
+                    return {
+                        name: c.name,
+                        message: c.message,
+                        enabled: c.enabled
+                    }
+                });
                 res.writeHead(200);
-                res.end(results[0].events);
-            }
-        });
+                res.end(JSON.stringify(responseBody));
+            });
+        }
+        
     }).catch(err => {
         res.writeHead(404);
         res.end(`Channel ${channel} not found`);
@@ -46,47 +64,41 @@ const put = (db, actions, req, res) => {
     const channel = args[0];
     const evt = args[1];
     let body = [];
-    req.on('error', err => {
-        res.writeHead(500);
-        res.end(`ERROR: ${err}`);
-    }).on('data', chunk => {
-        body.push(chunk);
-    }).on('end', _ => {
-        body = Buffer.concat(body).toString();
-        let validated = validateData(schema, JSON.parse(body));
-        if (validated !== true) {
-            res.writeHead(400);
-            res.end(JSON.stringify(validated));
-            return;
-        }
-        db.query(`SELECT events FROM channels WHERE id=?`, [channel], (err, results) => {
-            if (err) {
-                res.writeHead(500);
-                res.end(`ERROR: ${err}`);
-                return;
-            } else if (!results.length) {
-                res.writeHead(404);
-                res.end(`Channel ${channel} not found`);
+    channelExistsInDB(db, channel).then(_ => {
+        req.on('error', err => {
+            res.writeHead(500);
+            res.end(`ERROR: ${err}`);
+        }).on('data', chunk => {
+            body.push(chunk);
+        }).on('end', _ => {
+            body = JSON.parse(Buffer.concat(body).toString());
+            let validated = validateData(schema, body);
+            if (validated !== true) {
+                res.writeHead(400);
+                res.end(JSON.stringify(validated));
                 return;
             }
-            let events = JSON.parse(results[0].events);
-            if (!events[evt]) {
-                res.writeHead(404);
-                res.end(`Event ${evt} for channel ${channel} not found`);
-            } else {
-                events[evt] = JSON.parse(body);
-                db.query(`UPDATE channels SET events=? WHERE id=?`, [JSON.stringify(events), channel], (err, results) => {
-                    if (err) {
-                        res.writeHead(500);
-                        res.end(`ERROR: ${err}`);
-                        return;
-                    }
-                    actions.refreshChannelData(channel);
-                    res.writeHead(200);
-                    res.end(body);
-                });
-            }
+            db.query(
+            `UPDATE events SET name=?, message=?, enabled=? where channel_id=? and name=?`,
+            [evt, body.message, body.enabled, channel, evt],
+            (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }else if (!results.affectedRows) { 
+                    res.writeHead(404);
+                    res.end(`Event ${evt} not found for channel ${channel}`);
+                    return;
+                }
+                actions.refreshChannelData(channel);
+                res.writeHead(200);
+                res.end(JSON.stringify(body));
+            });
         });
+    }).catch(err => {
+        res.writeHead(404);
+        res.end(`Channel ${channel} not found`);
     });
 }
 
