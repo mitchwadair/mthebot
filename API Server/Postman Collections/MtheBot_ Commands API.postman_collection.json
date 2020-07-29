@@ -51,7 +51,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"alias\": \"myCommand\",\n\t\"message\": \"this is a command message\",\n\t\"cooldown\": 5,\n\t\"userLevel\": 0\n}",
+					"raw": "{\n\t\"alias\": \"myCommand\",\n\t\"message\": \"this is a command message\",\n\t\"cooldown\": 5,\n\t\"user_level\": 0\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -79,7 +79,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n\t\"alias\": \"myCommand\",\n\t\"message\": \"this is a changed command message\",\n\t\"cooldown\": 5,\n\t\"userLevel\": 0\n}",
+					"raw": "{\n\t\"alias\": \"myCommand\",\n\t\"message\": \"this is a changed command message\",\n\t\"cooldown\": 5,\n\t\"user_level\": 0\n}",
 					"options": {
 						"raw": {
 							"language": "json"

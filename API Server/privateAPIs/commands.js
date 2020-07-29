@@ -9,7 +9,7 @@ const schema = {
     alias: 'string',
     message: 'string',
     cooldown: 'number',
-    userLevel: 'number'
+    user_level: 'number'
 }
 
 const get = (db, req, res) => {
@@ -18,9 +18,7 @@ const get = (db, req, res) => {
     const cmd = args[1];
     channelExistsInDB(db, channel).then(_ => {
         if (cmd) {
-            let JSONquery = `JSON_EXTRACT(commands, JSON_UNQUOTE(REPLACE(JSON_SEARCH(commands, 'one', ?, NULL, '$[*].alias'), '.alias', ''))) as cmd`;
-            let JSONcontains = `JSON_CONTAINS(commands, JSON_OBJECT('alias', ?))`;
-            db.query(`SELECT ${JSONquery} FROM channels WHERE id=? and ${JSONcontains}`, [cmd, channel, cmd], (err, results) => {
+            db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, cmd], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
@@ -30,18 +28,32 @@ const get = (db, req, res) => {
                     res.end(`Command ${cmd} not found for channel ${channel}`);
                     return;
                 }
+                const responseBody = {
+                    alias: results[0].alias,
+                    message: results[0].message,
+                    cooldown: results[0].cooldown,
+                    user_level: results[0].user_level,
+                }
                 res.writeHead(200);
-                res.end(results[0].cmd);
+                res.end(JSON.stringify(responseBody));
             });
         } else {
-            db.query(`SELECT commands FROM channels WHERE id=?`, [channel], (err, results) => {
+            db.query(`SELECT * FROM commands WHERE channel_id=?`, [channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
                     return;
                 }
+                const responseBody = results.map(c => {
+                    return {
+                        alias: c.alias,
+                        message: c.message,
+                        cooldown: c.cooldown,
+                        user_level: c.user_level,
+                    }
+                });
                 res.writeHead(200);
-                res.end(results[0].commands);
+                res.end(JSON.stringify(responseBody));
             });
         }
     }).catch(err => {
@@ -61,22 +73,33 @@ const post = (db, actions, req, res) => {
         }).on('data', chunk => {
             body.push(chunk);
         }).on('end', _ => {
-            body = Buffer.concat(body).toString();
-            let validated = validateData(schema, JSON.parse(body));
+            body = JSON.parse(Buffer.concat(body).toString());
+            let validated = validateData(schema, body);
             if (validated !== true) {
                 res.writeHead(400);
                 res.end(JSON.stringify(validated));
                 return;
             }
-            db.query(`UPDATE channels SET commands=JSON_ARRAY_APPEND(commands, '$', CAST(? AS JSON)) WHERE id=?`, [body,channel], err => {
+            db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, body.alias], (err, results) => {
                 if (err) {
                     res.writeHead(500);
                     res.end(`ERROR: ${err}`);
                     return;
+                } else if (results.length) {
+                    res.writeHead(401);
+                    res.end(`Command ${body.alias} already exists for channel ${channel}`);
+                    return;
                 }
-                actions.refreshChannelData(channel);
-                res.writeHead(200);
-                res.end(body);
+                db.query(`INSERT INTO commands (channel_id, alias, message, cooldown, user_level) VALUES (?, ?, ?, ?, ?)`, [channel, body.alias, body.message, body.cooldown, body.user_level], err => {
+                    if (err) {
+                        res.writeHead(500);
+                        res.end(`ERROR: ${err}`);
+                        return;
+                    }
+                    actions.refreshChannelData(channel);
+                    res.writeHead(200);
+                    res.end(JSON.stringify(body));
+                });
             });
         });
     }).catch(err => {
@@ -90,48 +113,41 @@ const put = (db, actions, req, res) => {
     const channel = args[0];
     const cmd = args[1];
     let body = [];
-    req.on('error', err => {
-        res.writeHead(500);
-        res.end(`ERROR: ${err}`);
-    }).on('data', chunk => {
-        body.push(chunk);
-    }).on('end', _ => {
-        body = Buffer.concat(body).toString();
-        let validated = validateData(schema, JSON.parse(body));
-        if (validated !== true) {
-            res.writeHead(400);
-            res.end(JSON.stringify(validated));
-            return;
-        }
-        db.query(`SELECT commands FROM channels WHERE id=?`, [channel], (err, results) => {
-            if (err) {
-                res.writeHead(500);
-                res.end(`ERROR: ${err}`);
-                return;
-            } else if (!results.length) {
-                res.writeHead(404);
-                res.end(`Channel ${channel} not found`);
+    channelExistsInDB(db, channel).then(_ => {
+        req.on('error', err => {
+            res.writeHead(500);
+            res.end(`ERROR: ${err}`);
+        }).on('data', chunk => {
+            body.push(chunk);
+        }).on('end', _ => {
+            body = JSON.parse(Buffer.concat(body).toString());
+            let validated = validateData(schema, body);
+            if (validated !== true) {
+                res.writeHead(400);
+                res.end(JSON.stringify(validated));
                 return;
             }
-            let commands = JSON.parse(results[0].commands);
-            const i = commands.findIndex(command => command.alias === cmd);
-            if (!~i) {
-                res.writeHead(404);
-                res.end(`Command ${cmd} for channel ${channel} not found`);
-            } else {
-                commands[i] = JSON.parse(body);
-                db.query(`UPDATE channels SET commands=? WHERE id=?`, [JSON.stringify(commands), channel], (err, results) => {
-                    if (err) {
-                        res.writeHead(500);
-                        res.end(`ERROR: ${err}`);
-                        return;
-                    }
-                    actions.refreshChannelData(channel);
-                    res.writeHead(200);
-                    res.end(body);
-                });
-            }
+            db.query(
+            `UPDATE commands SET alias=?, message=?, cooldown=?, user_level=? where channel_id=? and alias=?`,
+            [body.alias, body.message, body.cooldown, body.user_level, channel, cmd],
+            (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }else if (!results.affectedRows) { 
+                    res.writeHead(404);
+                    res.end(`Command ${cmd} not found for channel ${channel}`);
+                    return;
+                }
+                actions.refreshChannelData(channel);
+                res.writeHead(200);
+                res.end(JSON.stringify(body));
+            });
         });
+    }).catch(err => {
+        res.writeHead(404);
+        res.end(`Channel ${channel} not found`);
     });
 }
 
@@ -139,34 +155,24 @@ const remove = (db, actions, req, res) => {
     const args = getArgsFromURL(req.url);
     const channel = args[0];
     const cmd = args[1];
-    db.query(`SELECT commands FROM channels WHERE id=?`, [channel], (err, results) => {
-        if (err) {
-            res.writeHead(500);
-            res.end(`ERROR: ${err}`);
-            return;
-        } else if (!results.length) {
-            res.writeHead(404);
-            res.end(`Channel ${channel} not found`);
-            return;
-        }
-        let commands = JSON.parse(results[0].commands);
-        const i = commands.findIndex(command => command.alias === cmd);
-        if (!~i) {
-            res.writeHead(404);
-            res.end(`Command ${cmd} for channel ${channel} not found`);
-        } else {
-            commands.splice(i, 1);
-            db.query(`UPDATE channels SET commands=? WHERE id=?`, [JSON.stringify(commands), channel], (err, results) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
-                    return;
-                }
-                actions.refreshChannelData(channel);
-                res.writeHead(200);
-                res.end();
-            });
-        }
+    channelExistsInDB(db, channel).then(_ => {
+        db.query(`DELETE FROM commands where channel_id=? and alias=?`, [channel, cmd], (err, results) => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            }else if (!results.affectedRows) { 
+                res.writeHead(404);
+                res.end(`Command ${cmd} not found for channel ${channel}`);
+                return;
+            }
+            actions.refreshChannelData(channel);
+            res.writeHead(200);
+            res.end();
+        });
+    }).catch(err => {
+        res.writeHead(404);
+        res.end(`Channel ${channel} not found`);
     });
 }
 
