@@ -9,8 +9,8 @@ const schema = {
     name: 'string',
     enabled: 'boolean',
     message: 'string',
-    seconds: 'number',
-    messageThreshold: 'number'
+    interval: 'number',
+    message_threshold: 'number'
 }
 
 const get = (db, req, res) => {
@@ -19,30 +19,44 @@ const get = (db, req, res) => {
     const timer = args[1];
     channelExistsInDB(db, channel).then(_ => {
         if (timer) {
-            let JSONquery = `JSON_EXTRACT(timers, JSON_UNQUOTE(REPLACE(JSON_SEARCH(timers, 'one', ?, NULL, '$[*].name'), '.name', ''))) as timer`;
-            let JSONcontains = `JSON_CONTAINS(timers, JSON_OBJECT('name', ?))`;
-            db.query(`SELECT ${JSONquery} FROM channels WHERE id=? and ${JSONcontains}`, [timer, channel, timer], (err, results) => {
+            db.query(`SELECT * FROM timers WHERE channel_id=? and name=?`, [channel, timer], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
+                    res.end(`${err}`);
                     return;
                 } else if (!results.length) {
                     res.writeHead(404);
                     res.end(`Timer ${timer} not found for channel ${channel}`);
                     return;
                 }
-                res.writeHead(200);
-                res.end(results[0].timer);
-            });
-        } else {
-            db.query(`SELECT timers FROM channels WHERE id=?`, [channel], (err, results) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
-                    return;
+                const responseBody = {
+                    name: results[0].name,
+                    message: results[0].message,
+                    enabled: results[0].enabled,
+                    interval: results[0].interval,
+                    message_threshold: results[0].message_threshold
                 }
                 res.writeHead(200);
-                res.end(results[0].timers);
+                res.end(JSON.stringify(responseBody));
+            });
+        } else {
+            db.query(`SELECT * FROM timers WHERE channel_id=?`, [channel], (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`${err}`);
+                    return;
+                }
+                const responseBody = results.map(c => {
+                    return {
+                        name: c.name,
+                        message: c.message,
+                        enabled: c.enabled,
+                        interval: c.interval,
+                        message_threshold: c.message_threshold
+                    }
+                });
+                res.writeHead(200);
+                res.end(JSON.stringify(responseBody));
             });
         }
     }).catch(err => {
@@ -62,22 +76,36 @@ const post = (db, actions, req, res) => {
         }).on('data', chunk => {
             body.push(chunk);
         }).on('end', _ => {
-            body = Buffer.concat(body).toString();
-            let validated = validateData(schema, JSON.parse(body));
+            body = JSON.parse(Buffer.concat(body).toString());
+            let validated = validateData(schema, body);
             if (validated !== true) {
                 res.writeHead(400);
                 res.end(JSON.stringify(validated));
                 return;
             }
-            db.query(`UPDATE channels SET timers=JSON_ARRAY_APPEND(timers, '$', CAST(? AS JSON)) WHERE id=?`, [body,channel], err => {
+            db.query(`SELECT * FROM timers WHERE channel_id=? and name=?`, [channel, body.name], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
+                    res.end(`${err}`);
+                    return;
+                } else if (results.length) {
+                    res.writeHead(401);
+                    res.end(`Timer ${body.name} already exists for channel ${channel}`);
                     return;
                 }
-                actions.refreshChannelData(channel);
-                res.writeHead(200);
-                res.end(body);
+                db.query(
+                `INSERT INTO timers (channel_id, name, enabled, message, \`interval\`, message_threshold) VALUES (?, ?, ?, ?, ?, ?)`,
+                [channel, body.name, body.enabled, body.message, body.interval, body.message_threshold],
+                err => {
+                    if (err) {
+                        res.writeHead(500);
+                        res.end(`${err}`);
+                        return;
+                    }
+                    actions.refreshChannelData(channel);
+                    res.writeHead(200);
+                    res.end(JSON.stringify(body));
+                });
             });
         });
     }).catch(err => {
@@ -91,48 +119,41 @@ const put = (db, actions, req, res) => {
     const channel = args[0];
     const timer = args[1];
     let body = [];
-    req.on('error', err => {
-        res.writeHead(500);
-        res.end(`ERROR: ${err}`);
-    }).on('data', chunk => {
-        body.push(chunk);
-    }).on('end', _ => {
-        body = Buffer.concat(body).toString();
-        let validated = validateData(schema, JSON.parse(body));
-        if (validated !== true) {
-            res.writeHead(400);
-            res.end(JSON.stringify(validated));
-            return;
-        }
-        db.query(`SELECT timers FROM channels WHERE id=?`, [channel], (err, results) => {
-            if (err) {
-                res.writeHead(500);
-                res.end(`ERROR: ${err}`);
-                return;
-            } else if (!results.length) {
-                res.writeHead(404);
-                res.end(`Channel ${channel} not found`);
+    channelExistsInDB(db, channel).then(_ => {
+        req.on('error', err => {
+            res.writeHead(500);
+            res.end(`ERROR: ${err}`);
+        }).on('data', chunk => {
+            body.push(chunk);
+        }).on('end', _ => {
+            body = JSON.parse(Buffer.concat(body).toString());
+            let validated = validateData(schema, body);
+            if (validated !== true) {
+                res.writeHead(400);
+                res.end(JSON.stringify(validated));
                 return;
             }
-            let timers = JSON.parse(results[0].timers);
-            const i = timers.findIndex(t => t.name === timer);
-            if (!~i) {
-                res.writeHead(404);
-                res.end(`Timer ${timer} for channel ${channel} not found`);
-            } else {
-                timers[i] = JSON.parse(body);
-                db.query(`UPDATE channels SET timers=? WHERE id=?`, [JSON.stringify(timers), channel], (err, results) => {
-                    if (err) {
-                        res.writeHead(500);
-                        res.end(`ERROR: ${err}`);
-                        return;
-                    }
-                    actions.refreshChannelData(channel);
-                    res.writeHead(200);
-                    res.end(body);
-                });
-            }
+            db.query(
+            `UPDATE timers SET name=?, enabled=?, message=?, \`interval\`=?, message_threshold=? where channel_id=? and name=?`,
+            [body.name, body.enabled, body.message, body.interval, body.message_threshold, channel, timer],
+            (err, results) => {
+                if (err) {
+                    res.writeHead(500);
+                    res.end(`ERROR: ${err}`);
+                    return;
+                }else if (!results.affectedRows) { 
+                    res.writeHead(404);
+                    res.end(`Timer ${timer} not found for channel ${channel}`);
+                    return;
+                }
+                actions.refreshChannelData(channel);
+                res.writeHead(200);
+                res.end(JSON.stringify(body));
+            });
         });
+    }).catch(err => {
+        res.writeHead(404);
+        res.end(`Channel ${channel} not found`);
     });
 }
 
@@ -140,34 +161,24 @@ const remove = (db, actions, req, res) => {
     const args = getArgsFromURL(req.url);
     const channel = args[0];
     const timer = args[1];
-    db.query(`SELECT timers FROM channels WHERE id=?`, [channel], (err, results) => {
-        if (err) {
-            res.writeHead(500);
-            res.end(`ERROR: ${err}`);
-            return;
-        } else if (!results.length) {
-            res.writeHead(404);
-            res.end(`Channel ${channel} not found`);
-            return;
-        }
-        let timers = JSON.parse(results[0].timers);
-        const i = timers.findIndex(t => t.name === timer);
-        if (!~i) {
-            res.writeHead(404);
-            res.end(`Timer ${timer} for channel ${channel} not found`);
-        } else {
-            timers.splice(i, 1);
-            db.query(`UPDATE channels SET timers=? WHERE id=?`, [JSON.stringify(timers), channel], (err, results) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
-                    return;
-                }
-                actions.refreshChannelData(channel);
-                res.writeHead(200);
-                res.end();
-            });
-        }
+    channelExistsInDB(db, channel).then(_ => {
+        db.query(`DELETE FROM timers where channel_id=? and name=?`, [channel, timer], (err, results) => {
+            if (err) {
+                res.writeHead(500);
+                res.end(`ERROR: ${err}`);
+                return;
+            }else if (!results.affectedRows) { 
+                res.writeHead(404);
+                res.end(`Timer ${timer} not found for channel ${channel}`);
+                return;
+            }
+            actions.refreshChannelData(channel);
+            res.writeHead(200);
+            res.end();
+        });
+    }).catch(err => {
+        res.writeHead(404);
+        res.end(`Channel ${channel} not found`);
     });
 }
 

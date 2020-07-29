@@ -51,7 +51,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"prime\",\n    \"enabled\": true,\n    \"message\": \"If you have twitch prime, don't forget that you get one free subscription every month! Consider using it here to support me\",\n    \"seconds\": 300,\n    \"messageThreshold\": 5\n}",
+					"raw": "{\n    \"name\": \"prime\",\n    \"enabled\": true,\n    \"message\": \"If you have twitch prime, don't forget that you get one free subscription every month! Consider using it here to support me\",\n    \"interval\": 300,\n    \"message_threshold\": 5\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -79,7 +79,7 @@
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"name\": \"prime\",\n    \"enabled\": true,\n    \"message\": \"subscribe with prime please\",\n    \"seconds\": 300,\n    \"messageThreshold\": 5\n}",
+					"raw": "{\n    \"name\": \"prime\",\n    \"enabled\": true,\n    \"message\": \"subscribe with prime please\",\n    \"interval\": 300,\n    \"message_threshold\": 5\n}",
 					"options": {
 						"raw": {
 							"language": "json"
