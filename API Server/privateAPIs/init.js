@@ -50,7 +50,7 @@ const post = (db, actions, req, res) => {
     db.query(query, err => {
         if (err) {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err);
             return;
         }
         actions.joinChannel(channel).then(_ => {
@@ -58,7 +58,7 @@ const post = (db, actions, req, res) => {
             res.end("Channel data created");
         }).catch(err => {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err);
         });
     });
 }

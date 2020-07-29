@@ -22,7 +22,7 @@ const get = (db, req, res) => {
             db.query(`SELECT * FROM timers WHERE channel_id=? and name=?`, [channel, timer], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`${err}`);
+                    res.end(err);
                     return;
                 } else if (!results.length) {
                     res.writeHead(404);
@@ -43,7 +43,7 @@ const get = (db, req, res) => {
             db.query(`SELECT * FROM timers WHERE channel_id=?`, [channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`${err}`);
+                    res.end(err);
                     return;
                 }
                 const responseBody = results.map(c => {
@@ -86,7 +86,7 @@ const post = (db, actions, req, res) => {
             db.query(`SELECT * FROM timers WHERE channel_id=? and name=?`, [channel, body.name], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`${err}`);
+                    res.end(err);
                     return;
                 } else if (results.length) {
                     res.writeHead(401);
@@ -99,7 +99,7 @@ const post = (db, actions, req, res) => {
                 err => {
                     if (err) {
                         res.writeHead(500);
-                        res.end(`${err}`);
+                        res.end(err);
                         return;
                     }
                     actions.refreshChannelData(channel);
@@ -122,7 +122,7 @@ const put = (db, actions, req, res) => {
     channelExistsInDB(db, channel).then(_ => {
         req.on('error', err => {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err);
         }).on('data', chunk => {
             body.push(chunk);
         }).on('end', _ => {
@@ -139,7 +139,7 @@ const put = (db, actions, req, res) => {
             (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
+                    res.end(err);
                     return;
                 }else if (!results.affectedRows) { 
                     res.writeHead(404);
@@ -165,7 +165,7 @@ const remove = (db, actions, req, res) => {
         db.query(`DELETE FROM timers where channel_id=? and name=?`, [channel, timer], (err, results) => {
             if (err) {
                 res.writeHead(500);
-                res.end(`ERROR: ${err}`);
+                res.end(err);
                 return;
             }else if (!results.affectedRows) { 
                 res.writeHead(404);

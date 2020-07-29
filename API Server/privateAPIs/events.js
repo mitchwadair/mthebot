@@ -19,7 +19,7 @@ const get = (db, req, res) => {
             db.query(`SELECT * FROM events WHERE channel_id=? and name=?`, [channel, evt], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
+                    res.end(err);
                     return;
                 } else if (!results.length) {
                     res.writeHead(404);
@@ -38,7 +38,7 @@ const get = (db, req, res) => {
             db.query(`SELECT * FROM events WHERE channel_id=?`, [channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
+                    res.end(err);
                     return;
                 }
                 const responseBody = results.map(c => {
@@ -67,7 +67,7 @@ const put = (db, actions, req, res) => {
     channelExistsInDB(db, channel).then(_ => {
         req.on('error', err => {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err);
         }).on('data', chunk => {
             body.push(chunk);
         }).on('end', _ => {
@@ -84,7 +84,7 @@ const put = (db, actions, req, res) => {
             (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(`ERROR: ${err}`);
+                    res.end(err);
                     return;
                 }else if (!results.affectedRows) { 
                     res.writeHead(404);
