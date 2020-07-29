@@ -160,7 +160,7 @@ const deleteChannel = channel => {
 const fetchChannelData = channelKey => {
     return new Promise((resolve, reject) => {
         twitchAPI.getUser(channelKey).then(data => {
-            db.query(`SELECT name,commands,events,timers,AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') AS token FROM channels WHERE id=${data.id}`, (err, results) => {
+            db.query(`SELECT name FROM channels WHERE id=${data.id}`, (err, results) => {
                 if (err) {
                     return reject(err);
                 } else {
@@ -174,29 +174,82 @@ const fetchChannelData = channelKey => {
                         });
                     }
 
-                    const timers = JSON.parse(results[0].timers);
-                    channels[channelKey] = {
-                        commands: JSON.parse(results[0].commands),
-                        events: JSON.parse(results[0].events),
-                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                        timers: timers.map((timer, i) => {
-                            if (timer.enabled) {
-                                return {
-                                    interval: setInterval(_ => {
-                                        if (channels[channelKey].timers[i].messageCount >= timer.messageThreshold) {
-                                            channels[channelKey].timers[i].messageCount = 0;
-                                            client.say(`#${channelKey}`, timer.message);
-                                        }
-                                    }, timer.seconds*1000),
-                                    messageCount: 0,
-                                }
+                    let commands = [];
+                    let events = {};
+                    let timers = [];
+                    let promises = []
+
+                    promises.push(new Promise((resolve, reject) => {
+                        db.query(`SELECT * from commands where channel_id=${data.id}`, (err, results) => {
+                            if (err) {
+                                reject(err);
                             }
-                        }),
-                        accessToken: results[0].token.toString(),
-                        id: data.id,
-                    }
-                    console.log(`** fetched data for channel ${channelKey}`);
-                    resolve();
+                            commands = results.map(c => {
+                                return {
+                                    alias: c.alias,
+                                    message: c.message,
+                                    cooldown: c.cooldown,
+                                    user_level: c.user_level,
+                                }
+                            });
+                            resolve();
+                        });
+                    }));
+                    promises.push(new Promise((resolve, reject) => {
+                        db.query(`SELECT * from events where channel_id=${data.id}`, (err, results) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            results.forEach(e => {
+                                events[e.name] = {
+                                    message: e.message,
+                                    enabled: e.enabled
+                                }
+                            });
+                            resolve();
+                        });
+                    }));
+                    promises.push(new Promise((resolve, reject) => {
+                        db.query(`SELECT * from timers where channel_id=${data.id}`, (err, results) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            timers = results.map(t => {
+                                return {
+                                    name: t.name,
+                                    message: t.message,
+                                    enabled: t.enabled,
+                                    interval: t.interval,
+                                    message_threshold: t.message_threshold
+                                }
+                            });
+                            resolve();
+                        });
+                    }));
+
+                    Promise.all(promises).then(_ => {
+                        channels[channelKey] = {
+                            commands: commands,
+                            events: events,
+                            timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
+                            timers: timers.map((timer, i) => {
+                                if (timer.enabled) {
+                                    return {
+                                        interval: setInterval(_ => {
+                                            if (channels[channelKey].timers[i].messageCount >= timer.message_threshold) {
+                                                channels[channelKey].timers[i].messageCount = 0;
+                                                client.say(`#${channelKey}`, timer.message);
+                                            }
+                                        }, timer.interval*1000),
+                                        messageCount: 0,
+                                    }
+                                }
+                            }),
+                            id: data.id,
+                        }
+                        console.log(`** fetched data for channel ${channelKey}`);
+                        resolve();
+                    });
                 }
             });
         }).catch(err => {
@@ -289,13 +342,13 @@ const onChat = (channel, userstate, message, self) => {
             const command = channels[channelKey].commands.find(cmd => {
                 return cmd.alias === alias;
             });
-            if (command && !command.isOnCooldown && userLevel >= command.userLevel) {
+            if (command && !command.isOnCooldown && userLevel >= command.user_level) {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
                     .replace(new RegExp('{{sender}}', 'g'), userstate['display-name'])
                     .replace(new RegExp('{{channel}}', 'g'), channelKey)
-                    .replace(new RegExp('{{commands}}', 'g'), channels[channelKey].commands.filter(c => c.userLevel === 0).map(c => `!${c.alias}`).join(', '));
+                    .replace(new RegExp('{{commands}}', 'g'), channels[channelKey].commands.filter(c => c.user_level === 0).map(c => `!${c.alias}`).join(', '));
                 let messagePromises = [];
                 DATA_TAGS.forEach(dt => {
                     if (message.includes(dt.tag)) {
