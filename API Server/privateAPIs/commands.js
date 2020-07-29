@@ -90,7 +90,10 @@ const post = (db, actions, req, res) => {
                     res.end(`Command ${body.alias} already exists for channel ${channel}`);
                     return;
                 }
-                db.query(`INSERT INTO commands (channel_id, alias, message, cooldown, user_level) VALUES (?, ?, ?, ?, ?)`, [channel, body.alias, body.message, body.cooldown, body.user_level], err => {
+                db.query(
+                `INSERT INTO commands (channel_id, alias, message, cooldown, user_level) VALUES (?, ?, ?, ?, ?)`,
+                [channel, body.alias, body.message, body.cooldown, body.user_level],
+                err => {
                     if (err) {
                         res.writeHead(500);
                         res.end(`ERROR: ${err}`);
