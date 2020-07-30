@@ -46,19 +46,32 @@ const post = (db, actions, req, res) => {
     }
     const channel = getArgsFromURL(req.url)[0];
     const token = req.headers.authorization.replace('Bearer ', '');
-    let query = `INSERT INTO channels VALUES (${channel}, "", AES_ENCRYPT("${token}", "${process.env.CLIENT_SECRET}"), true, "[]", ${db.escape(JSON.stringify(defaultEvents))}, "[]");`;
+    let query = `INSERT INTO channels (id, name, token, enabled) VALUES (${channel}, "", AES_ENCRYPT("${token}", "${process.env.CLIENT_SECRET}"), true);`;
+    let eventsQuery = `INSERT INTO events (channel_id, name, message, enabled) VALUES`
+    Object.keys(defaultEvents).forEach((k, i) => {
+        eventsQuery = `${eventsQuery} (${channel}, "${k}", "${defaultEvents[k].message}", ${defaultEvents[k].enabled})${i === Object.keys(defaultEvents).length - 1 ? ';' : ','}`
+    });
     db.query(query, err => {
         if (err) {
+            console.log(err);
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
             return;
         }
-        actions.joinChannel(channel).then(_ => {
-            res.writeHead(200);
-            res.end("Channel data created");
-        }).catch(err => {
-            res.writeHead(500);
-            res.end(err);
+        db.query(eventsQuery, e => {
+            if (e) {
+                console.log(e);
+                res.writeHead(500);
+                res.end(e.toString());
+                return;
+            }
+            actions.joinChannel(channel).then(_ => {
+                res.writeHead(200);
+                res.end("Channel data created");
+            }).catch(err => {
+                res.writeHead(500);
+                res.end(err);
+            });
         });
     });
 }
