@@ -65,13 +65,9 @@ const post = (db, actions, req, res) => {
                 res.end(e.toString());
                 return;
             }
-            actions.joinChannel(channel).then(_ => {
-                res.writeHead(200);
-                res.end("Channel data created");
-            }).catch(err => {
-                res.writeHead(500);
-                res.end(err.toString());
-            });
+            actions.joinChannel(channel);
+            res.writeHead(200);
+            res.end("Channel data created");
         });
     });
 }
