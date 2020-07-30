@@ -93,7 +93,7 @@ module.exports = function(db, actions) {
                         body.push(chunk);
                     }).on('end', _ => {
                         body = JSON.parse(Buffer.concat(body).toString());
-                        if (body.data[0].login !== channel) {
+                        if (body.data[0].id !== channel) {
                             res.writeHead(401);
                             res.end('Unauthorized request to private API');
                         } else {
