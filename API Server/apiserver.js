@@ -93,9 +93,12 @@ module.exports = function(db, actions) {
                         body.push(chunk);
                     }).on('end', _ => {
                         body = JSON.parse(Buffer.concat(body).toString());
-                        if (body.user_id !== channel || body.expires_in < 3600) {
+                        if (body.user_id !== channel) {
                             res.writeHead(401);
                             res.end('Unauthorized request to private API');
+                        } else if (body.expires_in < 3600) {
+                            res.writeHead(401);
+                            res.end('OAuth Token Expired');
                         } else {
                             sessionPool[channel] = {
                                 timeout: setTimeout(_ => {
