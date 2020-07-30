@@ -9,7 +9,7 @@ const get = (db, req, res) => {
     db.query("SELECT COUNT(*) AS users FROM channels", (err, results) => {
         if (err) {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
             return;
         }
         const query = url.parse(req.url, true).query;

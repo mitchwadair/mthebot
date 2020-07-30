@@ -70,7 +70,7 @@ const post = (db, actions, req, res) => {
                 res.end("Channel data created");
             }).catch(err => {
                 res.writeHead(500);
-                res.end(err);
+                res.end(err.toString());
             });
         });
     });

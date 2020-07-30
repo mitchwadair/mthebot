@@ -10,7 +10,7 @@ const get = (db, req, res) => {
     db.query(`SELECT enabled FROM channels WHERE id=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
             return;
         } else if (!results.length) {
             res.writeHead(404);
@@ -27,7 +27,7 @@ const post = (db, actions, req, res) => {
     db.query(`UPDATE channels SET enabled=true WHERE id=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
             return;
         }
         actions.joinChannel(channel).then(r => {
@@ -35,7 +35,7 @@ const post = (db, actions, req, res) => {
             res.end(`Bot set to enabled for channel ${channel}`);
         }).catch(err => {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
         });
     });
 }
@@ -45,7 +45,7 @@ const remove = (db, actions, req, res) => {
     db.query(`UPDATE channels SET enabled=false WHERE id=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
             return;
         }
         actions.leaveChannel(channel).then(_ => {
@@ -53,7 +53,7 @@ const remove = (db, actions, req, res) => {
             res.end(`Bot set to disabled for channel ${channel}`);
         }).catch(err => {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
         });
     });
 }

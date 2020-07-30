@@ -9,7 +9,7 @@ const post = (req, res) => {
     let body = [];
     req.on('error', err => {
         res.writeHead(500);
-        res.end(err);
+        res.end(err.toString());
     }).on('data', chunk => {
         body.push(chunk);
     }).on('end', _ => {
@@ -37,7 +37,7 @@ const post = (req, res) => {
         transport.sendMail(emailData, err => {
             if (err) {
                 res.writeHead(500);
-                res.end(err);
+                res.end(err.toString());
                 return;
             }
             res.writeHead(200);

@@ -11,7 +11,7 @@ const post = (db, actions, req, res) => {
     let body = [];
     req.on('error', err => {
         res.writeHead(500);
-        res.end(err);
+        res.end(err.toString());
     }).on('data', chunk => {
         body.push(chunk);
     }).on('end', _ => {
@@ -21,7 +21,7 @@ const post = (db, actions, req, res) => {
             db.query(`UPDATE channels SET token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}') WHERE id=?`, [body.token,channel], err => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(err);
+                    res.end(err.toString());
                     return;
                 }
                 actions.refreshChannelData(channel);
@@ -34,7 +34,7 @@ const post = (db, actions, req, res) => {
             if (err) {
                 console.log(err);
                 res.writeHead(500);
-                res.end(err);
+                res.end(err.toString());
                 return;
             }
             const token = results[0].token ? results[0].token.toString() : null;
@@ -43,7 +43,7 @@ const post = (db, actions, req, res) => {
                     updateTokenInDB();
                 }).on('error', err => {
                     res.writeHead(500);
-                    res.end(err);
+                    res.end(err.toString());
                 }).end();
             } else {
                 updateTokenInDB();

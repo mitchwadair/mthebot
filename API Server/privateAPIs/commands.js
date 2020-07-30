@@ -21,7 +21,7 @@ const get = (db, req, res) => {
             db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, cmd], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(err);
+                    res.end(err.toString());
                     return;
                 } else if (!results.length) {
                     res.writeHead(404);
@@ -41,7 +41,7 @@ const get = (db, req, res) => {
             db.query(`SELECT * FROM commands WHERE channel_id=?`, [channel], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(err);
+                    res.end(err.toString());
                     return;
                 }
                 const responseBody = results.map(c => {
@@ -69,7 +69,7 @@ const post = (db, actions, req, res) => {
     channelExistsInDB(db, channel).then(_ => {
         req.on('error', err => {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
         }).on('data', chunk => {
             body.push(chunk);
         }).on('end', _ => {
@@ -83,7 +83,7 @@ const post = (db, actions, req, res) => {
             db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, body.alias], (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(err);
+                    res.end(err.toString());
                     return;
                 } else if (results.length) {
                     res.writeHead(400);
@@ -96,7 +96,7 @@ const post = (db, actions, req, res) => {
                 err => {
                     if (err) {
                         res.writeHead(500);
-                        res.end(err);
+                        res.end(err.toString());
                         return;
                     }
                     actions.refreshChannelData(channel);
@@ -119,7 +119,7 @@ const put = (db, actions, req, res) => {
     channelExistsInDB(db, channel).then(_ => {
         req.on('error', err => {
             res.writeHead(500);
-            res.end(err);
+            res.end(err.toString());
         }).on('data', chunk => {
             body.push(chunk);
         }).on('end', _ => {
@@ -136,7 +136,7 @@ const put = (db, actions, req, res) => {
             (err, results) => {
                 if (err) {
                     res.writeHead(500);
-                    res.end(err);
+                    res.end(err.toString());
                     return;
                 }else if (!results.affectedRows) { 
                     res.writeHead(404);
@@ -162,7 +162,7 @@ const remove = (db, actions, req, res) => {
         db.query(`DELETE FROM commands where channel_id=? and alias=?`, [channel, cmd], (err, results) => {
             if (err) {
                 res.writeHead(500);
-                res.end(err);
+                res.end(err.toString());
                 return;
             }else if (!results.affectedRows) { 
                 res.writeHead(404);
