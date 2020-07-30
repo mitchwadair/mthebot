@@ -89,7 +89,7 @@ const post = (db, actions, req, res) => {
                     res.end(err);
                     return;
                 } else if (results.length) {
-                    res.writeHead(401);
+                    res.writeHead(400);
                     res.end(`Timer ${body.name} already exists for channel ${channel}`);
                     return;
                 }
