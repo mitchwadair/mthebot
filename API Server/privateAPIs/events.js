@@ -29,7 +29,7 @@ const get = (db, req, res) => {
                 const responseBody = {
                     name: results[0].name,
                     message: results[0].message,
-                    enabled: results[0].enabled,
+                    enabled: results[0].enabled ? true : false,
                 }
                 res.writeHead(200);
                 res.end(JSON.stringify(responseBody));
@@ -45,7 +45,7 @@ const get = (db, req, res) => {
                     return {
                         name: c.name,
                         message: c.message,
-                        enabled: c.enabled
+                        enabled: c.enabled ? true : false
                     }
                 });
                 res.writeHead(200);
