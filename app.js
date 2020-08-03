@@ -570,15 +570,23 @@ db.connect(err => {
 // ===================== INIT API SERVER =====================
 
 const actions = {
-    refreshChannelData: channel => {
-        if (channels[channel] !== undefined) {
-            deleteChannel(channel);
-            fetchChannelData(channel).then(_ => {
-                console.log(`** refreshed channel ${channel}`);
-            }).catch(err => {
+    refreshChannelData: channelID => {
+        db.query("SELECT name from channels where id=?", [channelID], (err, results) => {
+            if (err) {
                 console.log(`** ERROR refreshing channel ${channel}: ${err}`);
-            })
-        }
+                return;
+            }
+            const channel = results[0].name;
+            if (channels[channel] !== undefined) {
+                console.log(`** refreshing data for channel ${channel}`);
+                deleteChannel(channel);
+                fetchChannelData(channel).then(_ => {
+                    console.log(`** refreshed channel ${channel}`);
+                }).catch(err => {
+                    console.log(`** ERROR refreshing channel ${channel}: ${err}`);
+                })
+            }
+        });
     },
     joinChannel: channel => {
         return twitchAPI.getBatchUsersByID([channel]).then(data => {
