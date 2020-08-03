@@ -11,6 +11,10 @@ const twitchAPI = require('./External Data APIs/twitch');
 
 // ===================== HELPER FUNCTIONS =====================
 
+const timedLog = message => {
+    console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
+}
+
 // extend Array to include a 'chunk' function
 // use function rather than arrow func to access 'this'
 // makes shallow copy of current array, then splits the array into chunks of the given max chunk size and returns it
@@ -152,7 +156,7 @@ const deleteChannel = channel => {
             clearInterval(timer.interval);
         });
         delete channels[channel];
-        console.log(`** removed channel ${channel} from active channels`);
+        timedLog(`** removed channel ${channel} from active channels`);
     }
 }
 
@@ -167,9 +171,9 @@ const fetchChannelData = channelKey => {
                     if (results[0].name !== channelKey) {
                         db.query(`UPDATE channels set name='${channelKey}' where id=${data.id}`, err => {
                             if (err) {
-                                console.log(`** error updating name for id ${data.id}: ${err}`);
+                                timedLog(`** error updating name for id ${data.id}: ${err}`);
                             } else {
-                                console.log(`** updated name for id ${data.id} in DB to ${channelKey}`);
+                                timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
                             }
                         });
                     }
@@ -247,13 +251,13 @@ const fetchChannelData = channelKey => {
                             }),
                             id: data.id,
                         }
-                        console.log(`** fetched data for channel ${channelKey}`);
+                        timedLog(`** fetched data for channel ${channelKey}`);
                         resolve();
                     });
                 }
             });
         }).catch(err => {
-            console.log(`** error getting user data for channel ${channelKey}`)
+            timedLog(`** error getting user data for channel ${channelKey}`)
             reject(err);
         });
     });
@@ -269,7 +273,7 @@ const processChannel = channelKey => {
             resolve();
         } else {
             fetchChannelData(channelKey).then(_ => {
-                console.log(`** added channel ${channelKey} to active channels`);
+                timedLog(`** added channel ${channelKey} to active channels`);
                 resolve();
             }).catch(err => {
                 reject(err);
@@ -292,8 +296,8 @@ const getUserLevel = (userstate) => {
 // ===================== EVENT HANDLERS =====================
 
 const onConnected = (address, port) => {
-    console.log(`** MtheBot_ connected to ${address}:${port}`);
-    console.log('** joining all serviced channels...');
+    timedLog(`** MtheBot_ connected to ${address}:${port}`);
+    timedLog(`** joining all serviced channels...`);
     db.query("SELECT id,enabled from channels", (err, results, fields) => {
         let toJoin = results ? results.filter(res => res.enabled).map(res => {
             return res.id;
@@ -317,9 +321,9 @@ const onConnected = (address, port) => {
                 }));
             });
             Promise.all(promises).then(_ => {
-                console.log(`** all channels joined`);
+                timedLog(`** all channels joined`);
             }).catch(e => {
-                console.log(`** error joining channels: ${e}`);
+                timedLog(`** error joining channels: ${e}`);
             });
         });
     });
@@ -368,7 +372,7 @@ const onChat = (channel, userstate, message, self) => {
             }
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -384,7 +388,7 @@ const onHost = (channel, username, viewers, autohost) => {
                 client.say(channel, message);
             }
         }).catch(err => {
-            console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+            timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
         });
     }
 }
@@ -400,7 +404,7 @@ const onRaid = (channel, username, viewers) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -418,7 +422,7 @@ const onResub = (channel, username, monthStreak, message, userstate, methods) =>
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -437,7 +441,7 @@ const onSubGift = (channel, username, monthStreak, recipient, methods, userstate
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -455,7 +459,7 @@ const onSubMysteryGift = (channel, username, numbOfSubs, methods, userstate) => 
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -470,7 +474,7 @@ const onSub = (channel, username, methods, message, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -484,7 +488,7 @@ const onAnonGiftUpgrade = (channel, username, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -499,7 +503,7 @@ const onGiftUpgrade = (channel, username, sender, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -514,7 +518,7 @@ const onCheer = (channel, userstate, message) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -564,7 +568,7 @@ db.connect(err => {
         console.error(`** DB Connection failed: ${err.stack}`);
         return;
     }
-    console.log('** Connected to DB');
+    timedLog(`** Connected to DB`);
 });
 
 // ===================== INIT API SERVER =====================
@@ -573,17 +577,17 @@ const actions = {
     refreshChannelData: channelID => {
         db.query("SELECT name from channels where id=?", [channelID], (err, results) => {
             if (err) {
-                console.log(`** ERROR refreshing channel ${channel}: ${err}`);
+                timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
                 return;
             }
             const channel = results[0].name;
             if (channels[channel] !== undefined) {
-                console.log(`** refreshing data for channel ${channel}...`);
+                timedLog(`** refreshing data for channel ${channel}...`);
                 deleteChannel(channel);
                 fetchChannelData(channel).then(_ => {
-                    console.log(`** refreshed channel ${channel}`);
+                    timedLog(`** refreshed channel ${channel}`);
                 }).catch(err => {
-                    console.log(`** ERROR refreshing channel ${channel}: ${err}`);
+                    timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
                 })
             }
         });
