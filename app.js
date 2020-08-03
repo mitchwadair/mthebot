@@ -578,7 +578,7 @@ const actions = {
             }
             const channel = results[0].name;
             if (channels[channel] !== undefined) {
-                console.log(`** refreshing data for channel ${channel}`);
+                console.log(`** refreshing data for channel ${channel}...`);
                 deleteChannel(channel);
                 fetchChannelData(channel).then(_ => {
                     console.log(`** refreshed channel ${channel}`);
