@@ -66,7 +66,7 @@ MtheBot_ is built using [tmi.js](https://github.com/tmijs/tmi.js).  The back-end
     </a>
 </p>
 
-The official web application for MtheBot_ was a learning opportunity for me. At work, I use React so I took this opportunity to learn a new front-end framework. So, as a result, I went with [Vue](https://vuejs.org/).  In addition to Vue, I utilized the [Vuetify](https://vuetifyjs.com/) design library to make the application pretty.
+The [official web application](https://bot.mtheb.tv) for MtheBot_ was a learning opportunity for me. At work, I use React so I took this opportunity to learn a new front-end framework. So, as a result, I went with [Vue](https://vuejs.org/).  In addition to Vue, I utilized the [Vuetify](https://vuetifyjs.com/) design library to make the application pretty.
 
 # Contribute
 MtheBot_ is an open-source project and I welcome contributions to it!  I will do my best to review pull requests in a timely manner.  Documentation on getting started with developing for MtheBot_ as well as API reference can be found in the [doc](doc) section of this repository.
