@@ -218,7 +218,7 @@ Removes the command from the channel
 *404 Not Found*  
 
 ## Events
-Get or update events for a given channel id
+Get or update events for a given channel id.  There are a set number of events for Twitch so the API neither creates nor deletes events for channels, only updates the data.
 ### The Event Object
 All request and response bodies will come in the form of the event object
 ```json
