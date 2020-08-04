@@ -4,4 +4,4 @@ Welcome to the doc section for MtheBot_!  Here you'll find lots of useful inform
 ## Contents
 - [MtheBot_ Tutorials](Tutorials)
 - [API Documentation](API)
-- [Contributing to MtheBot_](Contribute.md)
+- [Contributing to MtheBot_](Contribute)
