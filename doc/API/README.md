@@ -214,6 +214,110 @@ Removes the command from the channel
 *404 Not Found*  
 
 ## Events
+Get or update events for a given channel id
+### The Event Object
+All request and response bodies will come in the form of the event object
+```json
+{
+  "name": "sub",
+  "message": "{{user}} just subbed with a {{type}} sub!",
+  "enabled": true,
+}
+```
+**name** - *string* - the name of the event
+**message** - *string* - the message to be sent by the bot when the event happens  
+**enabled** - *boolean* - whether or not the event is being handled by MtheBot_
+### GET /events/{channelID}
+Get a list of all events for the channel
+#### Response
+*200 OK*  
+```json
+[
+  {
+      "name": "sub",
+      "message": "{{user}} just subbed with a {{type}} sub!",
+      "enabled": true
+  },
+  {
+      "name": "host",
+      "message": "{{user}} hosted for {{viewers}} viewers!",
+      "enabled": true
+  },
+  {
+      "name": "raid",
+      "message": "{{user}} raided for {{viewers}} viewers!",
+      "enabled": true
+  },
+  {
+      "name": "cheer",
+      "message": "{{user}} just cheered {{amount}} bits!",
+      "enabled": true
+  },
+  {
+      "name": "resub",
+      "message": "{{user}} resubbed for {{months}} months!",
+      "enabled": true
+  },
+  {
+      "name": "subgift",
+      "message": "{{user}} gifted {{recipient}} a sub!",
+      "enabled": true
+  },
+  {
+      "name": "giftupgrade",
+      "message": "{{user}} upgraded their gifted sub from {{gifter}}!",
+      "enabled": true
+  },
+  {
+      "name": "mysterygift",
+      "message": "{{user}} gifted {{count}} subs!",
+      "enabled": true
+  },
+  {
+      "name": "anongiftupgrade",
+      "message": "{{user}} upgraded their gifted sub!",
+      "enabled": true
+  }
+]
+```
+### GET /events/{channelID}/{name}
+Gets the event with the given name for the channel
+#### Response
+*200 OK*  
+```json
+{
+  "name": "sub",
+  "message": "{{user}} just subbed with a {{type}} sub!",
+  "enabled": true
+}
+```
+*404 Not Found*  
+```
+Event name not found for channel channelID
+```
+### PUT /events/{channelID}/{name}
+Update an event for the channel
+#### Request Body
+```json
+{
+  "enabled": false,
+  "message": "{{user}} just subbed with a {{type}} sub!",
+}
+```
+#### Response
+The server will respond with the updated event data, which should be the same as the data provided
+*200 OK*  
+```json
+{
+  "name": "sub",
+  "message": "{{user}} just subbed with a {{type}} sub!",
+  "enabled": false
+}
+```
+*404 Not Found*  
+```
+Event name not found for channel channelID
+```
 
 ## Init
 
