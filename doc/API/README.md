@@ -171,7 +171,7 @@ Creates a new command for the channel
 }
 ```
 #### Response
-The server will respond with the created command, which should be the same as the data provided
+The server will respond with the created command, which should be the same as the data provided  
 *200 OK*  
 ```json
 {
@@ -197,7 +197,7 @@ Update an existing command for the channel
 }
 ```
 #### Response
-The server will respond with the updated command, which should be the same as the data provided
+The server will respond with the updated command, which should be the same as the data provided  
 *200 OK*  
 ```json
 {
@@ -309,7 +309,7 @@ Update an event for the channel
 }
 ```
 #### Response
-The server will respond with the updated event data, which should be the same as the data provided
+The server will respond with the updated event data, which should be the same as the data provided  
 *200 OK*  
 ```json
 {
@@ -402,7 +402,7 @@ Creates a new timer for the channel
 }
 ```
 #### Response
-The server will respond with the created timer, which should be the same as the data provided
+The server will respond with the created timer, which should be the same as the data provided  
 *200 OK*  
 ```json
 {
@@ -430,7 +430,7 @@ Update an existing timer for the channel
 }
 ```
 #### Response
-The server will respond with the updated timer, which should be the same as the data provided
+The server will respond with the updated timer, which should be the same as the data provided  
 *200 OK*  
 ```json
 {
