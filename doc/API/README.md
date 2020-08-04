@@ -349,10 +349,10 @@ All request and response bodies will come in the form of the timer object
     "message_threshold": 5
 }
 ```
-**name** - *string* - the name of the timer (only relevant for user reference)
+**name** - *string* - the name of the timer (only relevant for user reference)  
 **message** - *string* - the message to be sent by the bot when the command is used  
 **enabled** - *boolean* - whether or not the timer is active  
-**interval** - *int* - the number of seconds between each send of this timer
+**interval** - *int* - the number of seconds between each send of this timer  
 **message_threshold** - *int* - the number of chats required between each send of this message (useful so slower chats do not get spammed)  
 ### GET /timers/{channelID}
 Get a list of all timers for the channel
