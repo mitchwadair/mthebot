@@ -53,14 +53,17 @@ const post = (db, actions, req, res) => {
     });
     db.query(query, err => {
         if (err) {
-            console.log(err);
+            if (err.code === 'ER_DUP_ENTRY') {
+                res.writeHead(400);
+                res.end(`Channel ${channel} already exists`);
+                return
+            }
             res.writeHead(500);
             res.end(err.toString());
             return;
         }
         db.query(eventsQuery, e => {
             if (e) {
-                console.log(e);
                 res.writeHead(500);
                 res.end(e.toString());
                 return;
