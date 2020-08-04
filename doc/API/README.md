@@ -49,12 +49,12 @@ Submit a contact ticket for MtheBot_
   "message": "This is a really cool project!"
 }
 ```
-**type** - *string* - the type of contact being made one of: `['General', 'Help', 'Bug Report', 'Suggestion', 'Feedback']`  
+**type** - *string* - the type of contact being made `['General', 'Help', 'Bug Report', 'Suggestion', 'Feedback']`  
 **subject** - *string* - the subject of the message  
 **email** - *string* - the email for responses to be sent to  
 **name** - *string* - the name of the person sending the message  
 **message** - *string* - the content of the contact message  
-#### Reponse
+#### Response
 *200 OK*
 ```
 contact sent sucessfully
@@ -64,10 +64,154 @@ contact sent sucessfully
 Private endpoints require the caller to be authenticated with Twitch
 
 ## Auth
+Used to update auth tokens on user authentication with Twitch.  This is how API requests are verified.
+### POST /auth/{channelID}
+#### Request Parameters
+```json
+{
+  "token": "0123456789abcdefghijABCDEFGHIJ"
+}
+```
+**token** - *string* - the user access token returned from Twitch authentication
+#### Response
+*200 OK*  
+*400 Bad Request*  
+*500 Internal Server Error*  
 
 ## Chats
+Get or update the status of MtheBot_ for a given channel id
+### GET /chats/{channelID}
+Get the status of MtheBot_ for the channel
+#### Response
+*200 OK*  
+MtheBot_ is enabled
+```
+1
+```
+MtheBot_ is disabled
+```
+0
+```
+### POST /chats/{channelID}
+Enable MtheBot_ in the channel
+#### Response
+*200 OK*  
+```
+Bot set to enabled for channel channelID
+```
+### DELETE /chats/{channelID}
+Disable MtheBot_ in the channel
+#### Response
+*200 OK*  
+```
+Bot set to disabled for channel channelID
+```
 
 ## Commands
+Get or update commands for a given channel id
+### The Command Object
+All request and response bodies will come in the form of the command object
+```json
+{
+  "alias": "myCommand",
+  "message": "this is a command message",
+  "cooldown": 5,
+  "user_level": 0
+}
+```
+**alias** - *string* - the alias of the command (automatically prefixed by `!` for use in chat)  
+**message** - *string* - the message to be sent by the bot when the command is used  
+**cooldown** - *int* - the cooldown time between uses in seconds  
+**user_level** - *int* - the enumerated user level at which the command can be used `{user: 0, vip: 1, subscriber: 2, moderator: 3, global_mod: 3, broadcaster: 3}`  
+### GET /commands/{channelID}
+Get a list of all commands for the channel
+#### Response
+*200 OK*  
+```json
+[
+  {
+    "alias": "myCommand",
+    "message": "this is a command message",
+    "cooldown": 5,
+    "user_level": 0
+  },
+  {
+    "alias": "subs",
+    "message": "I currently have {{subcount}} subs",
+    "cooldown": 5,
+    "user_level": 0
+  }
+]
+```
+### GET /commands/{channelID}/{alias}
+Gets the command with the given alias for the channel
+#### Response
+*200 OK*  
+```json
+{
+  "alias": "myCommand",
+  "message": "this is a command message",
+  "cooldown": 5,
+  "user_level": 0
+}
+```
+*404 Not Found*  
+```
+Command alias not found for channel channelID
+```
+### POST /commands/{channelID}
+Creates a new command for the channel
+#### Request Body
+```json
+{
+  "alias": "myCommand",
+  "message": "this is a command message",
+  "cooldown": 5,
+  "user_level": 0
+}
+```
+#### Response
+The server will respond with the created command, which should be the same as the data provided
+*200 OK*  
+```json
+{
+  "alias": "myCommand",
+  "message": "this is a command message",
+  "cooldown": 5,
+  "user_level": 0
+}
+```
+### PUT /commands/{channelID}/{alias}
+Update an existing command for the channel
+#### Request Body
+```json
+{
+  "alias": "myCommand",
+  "message": "this is an updated command message",
+  "cooldown": 5,
+  "user_level": 0
+}
+```
+#### Response
+The server will respond with the updated command, which should be the same as the data provided
+*200 OK*  
+```json
+{
+  "alias": "myCommand",
+  "message": "this is an updated command message",
+  "cooldown": 5,
+  "user_level": 0
+}
+```
+*404 Not Found*  
+```
+Command alias not found for channel channelID
+```
+### DELETE /commands/{channelID}/{alias}
+Removes the command from the channel
+#### Response
+*200 OK*  
+*404 Not Found*  
 
 ## Events
 
