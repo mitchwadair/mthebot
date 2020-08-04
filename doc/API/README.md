@@ -181,6 +181,10 @@ The server will respond with the created command, which should be the same as th
   "user_level": 0
 }
 ```
+*400 Bad Request*  
+```
+Command alias already exists for channel channelID
+```
 ### PUT /commands/{channelID}/{alias}
 Update an existing command for the channel
 #### Request Body
@@ -320,5 +324,129 @@ Event name not found for channel channelID
 ```
 
 ## Init
+Initialize a new user in the database
+### POST /init/{channelID}
+#### Response
+*200 OK*  
+```
+Channel data created
+```
 
 ## Timers
+Get or update timers for a given channel id
+### The Timer Object
+All request and response bodies will come in the form of the timer object
+```json
+{
+    "name": "prime",
+    "message": "subscribe with prime please",
+    "enabled": true,
+    "interval": 300,
+    "message_threshold": 5
+}
+```
+**name** - *string* - the name of the timer (only relevant for user reference)
+**message** - *string* - the message to be sent by the bot when the command is used  
+**enabled** - *boolean* - whether or not the timer is active  
+**interval** - *int* - the number of seconds between each send of this timer
+**message_threshold** - *int* - the number of chats required between each send of this message (useful so slower chats do not get spammed)  
+### GET /timers/{channelID}
+Get a list of all timers for the channel
+#### Response
+*200 OK*  
+```json
+[
+  {
+      "name": "prime",
+      "message": "subscribe with prime please",
+      "enabled": true,
+      "interval": 300,
+      "message_threshold": 5
+  },
+  {
+      "name": "water",
+      "message": "dont forget to drink some water!",
+      "enabled": true,
+      "interval": 300,
+      "message_threshold": 0
+  }
+]
+```
+### GET /timers/{channelID}/{name}
+Gets the timer with the given name for the channel
+#### Response
+*200 OK*  
+```json
+{
+  "name": "prime",
+  "message": "subscribe with prime please",
+  "enabled": true,
+  "interval": 300,
+  "message_threshold": 5
+}
+```
+*404 Not Found*  
+```
+Timer name not found for channel channelID
+```
+### POST /timers/{channelID}
+Creates a new timer for the channel
+#### Request Body
+```json
+{
+  "name": "prime",
+  "message": "subscribe with prime please",
+  "enabled": true,
+  "interval": 300,
+  "message_threshold": 5
+}
+```
+#### Response
+The server will respond with the created timer, which should be the same as the data provided
+*200 OK*  
+```json
+{
+  "name": "prime",
+  "message": "subscribe with prime please",
+  "enabled": true,
+  "interval": 300,
+  "message_threshold": 5
+}
+```
+*400 Bad Request*  
+```
+Timer prime already exists for channel channelID
+```
+### PUT /timers/{channelID}/{name}
+Update an existing timer for the channel
+#### Request Body
+```json
+{
+  "name": "prime",
+  "message": "subscribe with prime pretty please",
+  "enabled": true,
+  "interval": 60,
+  "message_threshold": 5
+}
+```
+#### Response
+The server will respond with the updated timer, which should be the same as the data provided
+*200 OK*  
+```json
+{
+  "name": "prime",
+  "message": "subscribe with prime pretty please",
+  "enabled": true,
+  "interval": 60,
+  "message_threshold": 5
+}
+```
+*404 Not Found*  
+```
+Timer name not found for channel channelID
+```
+### DELETE /timers/{channelID}/{name}
+Removes the timer from the channel
+#### Response
+*200 OK*  
+*404 Not Found*  
