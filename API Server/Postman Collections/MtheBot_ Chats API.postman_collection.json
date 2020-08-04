@@ -11,14 +11,14 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/chats/mtheb_",
+					"raw": "localhost:8080/chats/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"chats",
-						"mtheb_"
+						"0"
 					]
 				}
 			},
@@ -30,14 +30,14 @@
 				"method": "POST",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/chats/mtheb_",
+					"raw": "localhost:8080/chats/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"chats",
-						"mtheb_"
+						"0"
 					]
 				}
 			},
@@ -49,14 +49,14 @@
 				"method": "DELETE",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/chats/mtheb_",
+					"raw": "localhost:8080/chats/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"chats",
-						"mtheb_"
+						"0"
 					]
 				}
 			},

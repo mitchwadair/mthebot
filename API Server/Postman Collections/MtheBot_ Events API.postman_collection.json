@@ -11,27 +11,47 @@
 				"method": "GET",
 				"header": [],
 				"url": {
-					"raw": "localhost:8080/events/mtheb_",
+					"raw": "localhost:8080/events/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"events",
-						"mtheb_"
+						"0"
 					]
 				}
 			},
 			"response": []
 		},
 		{
-			"name": "POST",
+			"name": "GET :id",
 			"request": {
-				"method": "POST",
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "localhost:8080/events/0/sub",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"events",
+						"0",
+						"sub"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "PUT",
+			"request": {
+				"method": "PUT",
 				"header": [],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"sub\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} just subbed with a {{type}} sub!\"\n    },\n    \"host\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} hosted for {{viewers}} viewers!\"\n    },\n    \"raid\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} raided for {{viewers}} viewers!\"\n    },\n    \"cheer\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} just cheered {{amount}} bits!\"\n    },\n    \"resub\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} resubbed for {{months}} months!\"\n    },\n    \"subgift\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} gifted {{recipient}} a sub!\"\n    },\n    \"giftupgrade\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} upgraded their gifted sub from {{gifter}}!\"\n    },\n    \"mysterygift\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} gifted {{count}} subs!\"\n    },\n    \"anongiftupgrade\": {\n        \"enabled\": true,\n        \"message\": \"{{user}} upgraded their gifted sub!\"\n    }\n}",
+					"raw": "{\n    \"enabled\": true,\n    \"message\": \"{{user}} just subbed with a {{type}} sub!\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
@@ -39,14 +59,15 @@
 					}
 				},
 				"url": {
-					"raw": "localhost:8080/events/mtheb_",
+					"raw": "localhost:8080/events/0/sub",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"events",
-						"mtheb_"
+						"0",
+						"sub"
 					]
 				}
 			},

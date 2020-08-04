@@ -1,4 +1,7 @@
 # MtheBot_ Documentation
+Welcome to the doc section for MtheBot_!  Here you'll find lots of useful information about MtheBot_ including using it, contributing to it, and API documentation.
 
-## This section is currently under construction
-Please be patient as I work on putting out useful and in-depth documentation to help you get started with contributing to MtheBot_ or working with MtheBot_'s APIs!
+## Contents
+- [MtheBot_ Tutorials](Tutorials)
+- [API Documentation](API)
+- [Contributing to MtheBot_](Contribute)

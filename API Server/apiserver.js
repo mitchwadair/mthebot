@@ -15,7 +15,7 @@ const init = require('./privateAPIs/init');
 const contact = require('./publicAPIs/contact');
 const auth = require('./privateAPIs/auth');
 
-const getChannelFromURL = require('./utils').getChannelFromURL;
+const getArgsFromURL = require('./utils').getArgsFromURL;
 
 module.exports = function(db, actions) {
     // API routes
@@ -64,7 +64,7 @@ module.exports = function(db, actions) {
                 return;
             }
 
-            const channel = getChannelFromURL(req.url);
+            const channel = getArgsFromURL(req.url)[0];
             if (sessionPool[channel]) {
                 clearTimeout(sessionPool[channel].timeout);
                 sessionPool[channel] = {
@@ -84,7 +84,7 @@ module.exports = function(db, actions) {
                     'Authorization': req.headers.authorization,
                     'Client-ID': process.env.CLIENT_ID,
                 }
-                https.get('https://api.twitch.tv/helix/users', {headers: headers}, r => {
+                https.get('https://id.twitch.tv/oauth2/validate', {headers: headers}, r => {
                     let body = [];
                     r.on('error', err => {
                         res.writeHead(err.status);
@@ -93,7 +93,10 @@ module.exports = function(db, actions) {
                         body.push(chunk);
                     }).on('end', _ => {
                         body = JSON.parse(Buffer.concat(body).toString());
-                        if (body.data[0].login !== channel) {
+                        if (body.expires_in < 3600) {
+                            res.writeHead(401);
+                            res.end('OAuth Token Expired');
+                        } else if (body.user_id !== channel) {
                             res.writeHead(401);
                             res.end('Unauthorized request to private API');
                         } else {
@@ -111,9 +114,6 @@ module.exports = function(db, actions) {
                             }
                         }
                     });
-                }).on('error', err => {
-                    res.writeHead(err.status);
-                    res.end(`ERROR: ${err}`);
                 });
             }
         } else {

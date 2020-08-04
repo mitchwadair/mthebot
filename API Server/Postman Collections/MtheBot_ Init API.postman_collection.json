@@ -7,6 +7,18 @@
 	"item": [
 		{
 			"name": "POST",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "10ef73a3-1e08-40fe-822d-e13856ace023",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
@@ -17,14 +29,14 @@
 					}
 				],
 				"url": {
-					"raw": "localhost:8080/init/mtheb_",
+					"raw": "localhost:8080/init/0",
 					"host": [
 						"localhost"
 					],
 					"port": "8080",
 					"path": [
 						"init",
-						"mtheb_"
+						"0"
 					]
 				}
 			},

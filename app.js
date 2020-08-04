@@ -11,6 +11,10 @@ const twitchAPI = require('./External Data APIs/twitch');
 
 // ===================== HELPER FUNCTIONS =====================
 
+const timedLog = message => {
+    console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
+}
+
 // extend Array to include a 'chunk' function
 // use function rather than arrow func to access 'this'
 // makes shallow copy of current array, then splits the array into chunks of the given max chunk size and returns it
@@ -152,46 +156,109 @@ const deleteChannel = channel => {
             clearInterval(timer.interval);
         });
         delete channels[channel];
-        console.log(`** removed channel ${channel} from active channels`);
+        timedLog(`** removed channel ${channel} from active channels`);
     }
 }
 
 // get channel data from DB
 const fetchChannelData = channelKey => {
     return new Promise((resolve, reject) => {
-        db.query(`SELECT commands,events,timers,AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') AS token FROM channels WHERE name='${channelKey}'`, (err, results) => {
-            if (err) {
-                return reject(err);
-            } else {
-                const timers = JSON.parse(results[0].timers);
-                twitchAPI.getUser(channelKey).then(d => {
-                    channels[channelKey] = {
-                        commands: JSON.parse(results[0].commands),
-                        events: JSON.parse(results[0].events),
-                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                        timers: timers.map((timer, i) => {
-                            if (timer.enabled) {
-                                return {
-                                    interval: setInterval(_ => {
-                                        if (channels[channelKey].timers[i].messageCount >= timer.messageThreshold) {
-                                            channels[channelKey].timers[i].messageCount = 0;
-                                            client.say(`#${channelKey}`, timer.message);
-                                        }
-                                    }, timer.seconds*1000),
-                                    messageCount: 0,
-                                }
+        twitchAPI.getUser(channelKey).then(data => {
+            db.query(`SELECT name FROM channels WHERE id=${data.id}`, (err, results) => {
+                if (err) {
+                    return reject(err);
+                } else {
+                    if (results[0].name !== channelKey) {
+                        db.query(`UPDATE channels set name='${channelKey}' where id=${data.id}`, err => {
+                            if (err) {
+                                timedLog(`** error updating name for id ${data.id}: ${err}`);
+                            } else {
+                                timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
                             }
-                        }),
-                        accessToken: results[0].token.toString(),
-                        id: d.id,
+                        });
                     }
-                    console.log(`** fetched data for channel ${channelKey}`);
-                    resolve();
-                }).catch(err => {
-                    console.log(`** error getting user data for channel ${channelKey}`)
-                    reject(err);
-                });
-            }
+
+                    let commands = [];
+                    let events = {};
+                    let timers = [];
+                    let promises = []
+
+                    promises.push(new Promise((resolve, reject) => {
+                        db.query(`SELECT * from commands where channel_id=${data.id}`, (err, results) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            commands = results.map(c => {
+                                return {
+                                    alias: c.alias,
+                                    message: c.message,
+                                    cooldown: c.cooldown,
+                                    user_level: c.user_level,
+                                }
+                            });
+                            resolve();
+                        });
+                    }));
+                    promises.push(new Promise((resolve, reject) => {
+                        db.query(`SELECT * from events where channel_id=${data.id}`, (err, results) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            results.forEach(e => {
+                                events[e.name] = {
+                                    message: e.message,
+                                    enabled: e.enabled
+                                }
+                            });
+                            resolve();
+                        });
+                    }));
+                    promises.push(new Promise((resolve, reject) => {
+                        db.query(`SELECT * from timers where channel_id=${data.id}`, (err, results) => {
+                            if (err) {
+                                reject(err);
+                            }
+                            timers = results.map(t => {
+                                return {
+                                    name: t.name,
+                                    message: t.message,
+                                    enabled: t.enabled,
+                                    interval: t.interval,
+                                    message_threshold: t.message_threshold
+                                }
+                            });
+                            resolve();
+                        });
+                    }));
+
+                    Promise.all(promises).then(_ => {
+                        channels[channelKey] = {
+                            commands: commands,
+                            events: events,
+                            timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
+                            timers: timers.map((timer, i) => {
+                                if (timer.enabled) {
+                                    return {
+                                        interval: setInterval(_ => {
+                                            if (channels[channelKey].timers[i].messageCount >= timer.message_threshold) {
+                                                channels[channelKey].timers[i].messageCount = 0;
+                                                client.say(`#${channelKey}`, timer.message);
+                                            }
+                                        }, timer.interval*1000),
+                                        messageCount: 0,
+                                    }
+                                }
+                            }),
+                            id: data.id,
+                        }
+                        timedLog(`** fetched data for channel ${channelKey}`);
+                        resolve();
+                    });
+                }
+            });
+        }).catch(err => {
+            timedLog(`** error getting user data for channel ${channelKey}`)
+            reject(err);
         });
     });
 }
@@ -206,7 +273,7 @@ const processChannel = channelKey => {
             resolve();
         } else {
             fetchChannelData(channelKey).then(_ => {
-                console.log(`** added channel ${channelKey} to active channels`);
+                timedLog(`** added channel ${channelKey} to active channels`);
                 resolve();
             }).catch(err => {
                 reject(err);
@@ -229,17 +296,35 @@ const getUserLevel = (userstate) => {
 // ===================== EVENT HANDLERS =====================
 
 const onConnected = (address, port) => {
-    console.log(`** MtheBot_ connected to ${address}:${port}`);
-    console.log('** joining all serviced channels...');
-    db.query("SELECT name,enabled from channels", (err, results, fields) => {
-        let promises = results ? results.map(res => {
-            if (!res.enabled) return;
-            return client.join(res.name);
+    timedLog(`** MtheBot_ connected to ${address}:${port}`);
+    timedLog(`** joining all serviced channels...`);
+    db.query("SELECT id,enabled from channels", (err, results, fields) => {
+        let toJoin = results ? results.filter(res => res.enabled).map(res => {
+            return res.id;
         }) : [];
-        Promise.all(promises).then(_ => {
-            console.log('** all serviced channels have been joined');
-        }).catch(err => {
-            console.log(`** ERROR JOINING CHANNEL: ${err}`);
+        twitchAPI.getBatchUsersByID(toJoin).then(data => {
+            let batches = data.chunk(50);
+            let promises = [];
+            batches.forEach((batch, i) => {
+                promises.push(new Promise((resolve, reject) => {
+                    setTimeout(_ => {
+                        let joinPromises = [];
+                        batch.forEach(user => {
+                            joinPromises.push(client.join(user.name));
+                        });
+                        Promise.all(joinPromises).then(_ => {
+                            resolve();
+                        }).catch(e => {
+                            reject(e);
+                        })
+                    }, i * 15000);
+                }));
+            });
+            Promise.all(promises).then(_ => {
+                timedLog(`** all channels joined`);
+            }).catch(e => {
+                timedLog(`** error joining channels: ${e}`);
+            });
         });
     });
 }
@@ -261,13 +346,13 @@ const onChat = (channel, userstate, message, self) => {
             const command = channels[channelKey].commands.find(cmd => {
                 return cmd.alias === alias;
             });
-            if (command && !command.isOnCooldown && userLevel >= command.userLevel) {
+            if (command && !command.isOnCooldown && userLevel >= command.user_level) {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
                     .replace(new RegExp('{{sender}}', 'g'), userstate['display-name'])
                     .replace(new RegExp('{{channel}}', 'g'), channelKey)
-                    .replace(new RegExp('{{commands}}', 'g'), channels[channelKey].commands.filter(c => c.userLevel === 0).map(c => `!${c.alias}`).join(', '));
+                    .replace(new RegExp('{{commands}}', 'g'), channels[channelKey].commands.filter(c => c.user_level === 0).map(c => `!${c.alias}`).join(', '));
                 let messagePromises = [];
                 DATA_TAGS.forEach(dt => {
                     if (message.includes(dt.tag)) {
@@ -287,7 +372,7 @@ const onChat = (channel, userstate, message, self) => {
             }
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -303,7 +388,7 @@ const onHost = (channel, username, viewers, autohost) => {
                 client.say(channel, message);
             }
         }).catch(err => {
-            console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+            timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
         });
     }
 }
@@ -319,7 +404,7 @@ const onRaid = (channel, username, viewers) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -337,7 +422,7 @@ const onResub = (channel, username, monthStreak, message, userstate, methods) =>
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -356,7 +441,7 @@ const onSubGift = (channel, username, monthStreak, recipient, methods, userstate
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -374,7 +459,7 @@ const onSubMysteryGift = (channel, username, numbOfSubs, methods, userstate) => 
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -389,7 +474,7 @@ const onSub = (channel, username, methods, message, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -403,7 +488,7 @@ const onAnonGiftUpgrade = (channel, username, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -418,7 +503,7 @@ const onGiftUpgrade = (channel, username, sender, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -433,7 +518,7 @@ const onCheer = (channel, userstate, message) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        console.log(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -483,27 +568,39 @@ db.connect(err => {
         console.error(`** DB Connection failed: ${err.stack}`);
         return;
     }
-    console.log('** Connected to DB');
+    timedLog(`** Connected to DB`);
 });
 
 // ===================== INIT API SERVER =====================
 
 const actions = {
-    refreshChannelData: channel => {
-        if (channels[channel] !== undefined) {
-            deleteChannel(channel);
-            fetchChannelData(channel).then(_ => {
-                console.log(`** refreshed channel ${channel}`);
-            }).catch(err => {
-                console.log(`** ERROR refreshing channel ${channel}: ${err}`);
-            })
-        }
+    refreshChannelData: channelID => {
+        db.query("SELECT name from channels where id=?", [channelID], (err, results) => {
+            if (err) {
+                timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
+                return;
+            }
+            const channel = results[0].name;
+            if (channels[channel] !== undefined) {
+                timedLog(`** refreshing data for channel ${channel}...`);
+                deleteChannel(channel);
+                fetchChannelData(channel).then(_ => {
+                    timedLog(`** refreshed channel ${channel}`);
+                }).catch(err => {
+                    timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
+                })
+            }
+        });
     },
     joinChannel: channel => {
-        return client.join(channel);
+        return twitchAPI.getBatchUsersByID([channel]).then(data => {
+            return data[0] ? client.join(data[0].name) : true;
+        });
     },
     leaveChannel: channel => {
-        return client.part(channel);
+        return twitchAPI.getBatchUsersByID([channel]).then(data => {
+            return data[0] ? client.part(data[0].name) : true;
+        });
     }
 }
 

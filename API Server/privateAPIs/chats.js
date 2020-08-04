@@ -3,15 +3,14 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
-const getChannelFromURL = require('../utils').getChannelFromURL;
+const getArgsFromURL = require('../utils').getArgsFromURL;
 
 const get = (db, req, res) => {
-    const channel = getChannelFromURL(req.url);
-    db.query(`SELECT enabled FROM channels WHERE name=?`, [channel], (err, results) => {
+    const channel = getArgsFromURL(req.url)[0];
+    db.query(`SELECT enabled FROM channels WHERE id=?`, [channel], (err, results) => {
         if (err) {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err.toString());
             return;
         } else if (!results.length) {
             res.writeHead(404);
@@ -24,37 +23,37 @@ const get = (db, req, res) => {
 }
 
 const post = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
-    db.query(`UPDATE channels SET enabled=true WHERE name=?`, [channel], err => {
+    const channel = getArgsFromURL(req.url)[0];
+    db.query(`UPDATE channels SET enabled=true WHERE id=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err.toString());
             return;
         }
-        actions.joinChannel(channel).then(_ => {
+        actions.joinChannel(channel).then(r => {
             res.writeHead(200);
-            res.end();
+            res.end(`Bot set to enabled for channel ${channel}`);
         }).catch(err => {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err.toString());
         });
     });
 }
 
 const remove = (db, actions, req, res) => {
-    const channel = getChannelFromURL(req.url);
-    db.query(`UPDATE channels SET enabled=false WHERE name=?`, [channel], err => {
+    const channel = getArgsFromURL(req.url)[0];
+    db.query(`UPDATE channels SET enabled=false WHERE id=?`, [channel], err => {
         if (err) {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err.toString());
             return;
         }
         actions.leaveChannel(channel).then(_ => {
             res.writeHead(200);
-            res.end();
+            res.end(`Bot set to disabled for channel ${channel}`);
         }).catch(err => {
             res.writeHead(500);
-            res.end(`ERROR: ${err}`);
+            res.end(err.toString());
         });
     });
 }
