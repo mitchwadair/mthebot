@@ -331,6 +331,10 @@ Initialize a new user in the database
 ```
 Channel data created
 ```
+*400 Bad Request*
+```
+Channel channelID already exists
+```
 
 ## Timers
 Get or update timers for a given channel id
