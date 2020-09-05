@@ -157,7 +157,7 @@ const deleteChannel = channel => {
             clearInterval(timer.interval);
         });
         delete channels[channel];
-        timedLog(`** BOT: removed channel ${channel} from active channels`);
+        timedLog(`** BOT: Removed channel ${channel} from active channels`);
     }
 }
 
@@ -172,9 +172,9 @@ const fetchChannelData = channelKey => {
                     if (results[0].name !== channelKey) {
                         db.query(`UPDATE channels set name='${channelKey}' where id=${data.id}`, err => {
                             if (err) {
-                                timedLog(`** BOT: error updating name for id ${data.id}: ${err}`);
+                                timedLog(`** BOT: Error updating name for id ${data.id}: ${err}`);
                             } else {
-                                timedLog(`** BOT: updated name for id ${data.id} in DB to ${channelKey}`);
+                                timedLog(`** BOT: Updated name for id ${data.id} in DB to ${channelKey}`);
                             }
                         });
                     }
@@ -252,13 +252,13 @@ const fetchChannelData = channelKey => {
                             }),
                             id: data.id,
                         }
-                        timedLog(`** BOT: fetched data for channel ${channelKey}`);
+                        timedLog(`** BOT: Fetched data for channel ${channelKey}`);
                         resolve();
                     });
                 }
             });
         }).catch(err => {
-            timedLog(`** BOT: error getting user data for channel ${channelKey}`)
+            timedLog(`** BOT: Error getting user data for channel ${channelKey}`)
             reject(err);
         });
     });
@@ -274,7 +274,7 @@ const processChannel = channelKey => {
             resolve();
         } else {
             fetchChannelData(channelKey).then(_ => {
-                timedLog(`** BOT: added channel ${channelKey} to active channels`);
+                timedLog(`** BOT: Added channel ${channelKey} to active channels`);
                 resolve();
             }).catch(err => {
                 reject(err);
@@ -588,10 +588,10 @@ const actions = {
             }
             const channel = results[0].name;
             if (channels[channel] !== undefined) {
-                timedLog(`** BOT: refreshing data for channel ${channel}...`);
+                timedLog(`** BOT: Refreshing data for channel ${channel}...`);
                 deleteChannel(channel);
                 fetchChannelData(channel).then(_ => {
-                    timedLog(`** BOT: refreshed channel ${channel}`);
+                    timedLog(`** BOT: Refreshed channel ${channel}`);
                 }).catch(err => {
                     timedLog(`** BOT: ERROR refreshing channel ${channel}: ${err}`);
                 })
