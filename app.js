@@ -182,6 +182,7 @@ const fetchChannelData = channelKey => {
                     let commands = [];
                     let events = {};
                     let timers = [];
+                    let redemptions = [];
                     let promises = []
 
                     promises.push(new Promise((resolve, reject) => {
@@ -523,7 +524,7 @@ const onCheer = (channel, userstate, message) => {
     });
 }
 
-// ===================== INIT CHAT BOT/DB/PUBSUB CONNECTION =====================
+// ===================== INIT CHAT BOT/DB/PUBSUB =====================
 
 const opts = {
     identity: {
