@@ -8,6 +8,7 @@ const tmi = require('tmi.js');
 const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
 const twitchAPI = require('./External Data APIs/twitch');
+const PubSub = require('./PubSub/pubsub');
 
 // ===================== HELPER FUNCTIONS =====================
 
@@ -156,7 +157,7 @@ const deleteChannel = channel => {
             clearInterval(timer.interval);
         });
         delete channels[channel];
-        timedLog(`** removed channel ${channel} from active channels`);
+        timedLog(`** BOT: removed channel ${channel} from active channels`);
     }
 }
 
@@ -171,9 +172,9 @@ const fetchChannelData = channelKey => {
                     if (results[0].name !== channelKey) {
                         db.query(`UPDATE channels set name='${channelKey}' where id=${data.id}`, err => {
                             if (err) {
-                                timedLog(`** error updating name for id ${data.id}: ${err}`);
+                                timedLog(`** BOT: error updating name for id ${data.id}: ${err}`);
                             } else {
-                                timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
+                                timedLog(`** BOT: updated name for id ${data.id} in DB to ${channelKey}`);
                             }
                         });
                     }
@@ -251,13 +252,13 @@ const fetchChannelData = channelKey => {
                             }),
                             id: data.id,
                         }
-                        timedLog(`** fetched data for channel ${channelKey}`);
+                        timedLog(`** BOT: fetched data for channel ${channelKey}`);
                         resolve();
                     });
                 }
             });
         }).catch(err => {
-            timedLog(`** error getting user data for channel ${channelKey}`)
+            timedLog(`** BOT: error getting user data for channel ${channelKey}`)
             reject(err);
         });
     });
@@ -273,7 +274,7 @@ const processChannel = channelKey => {
             resolve();
         } else {
             fetchChannelData(channelKey).then(_ => {
-                timedLog(`** added channel ${channelKey} to active channels`);
+                timedLog(`** BOT: added channel ${channelKey} to active channels`);
                 resolve();
             }).catch(err => {
                 reject(err);
@@ -296,8 +297,8 @@ const getUserLevel = (userstate) => {
 // ===================== EVENT HANDLERS =====================
 
 const onConnected = (address, port) => {
-    timedLog(`** MtheBot_ connected to ${address}:${port}`);
-    timedLog(`** joining all serviced channels...`);
+    timedLog(`** BOT: Connected to ${address}:${port}`);
+    timedLog(`** BOT: Joining all serviced channels...`);
     db.query("SELECT id,enabled from channels", (err, results, fields) => {
         let toJoin = results ? results.filter(res => res.enabled).map(res => {
             return res.id;
@@ -321,9 +322,9 @@ const onConnected = (address, port) => {
                 }));
             });
             Promise.all(promises).then(_ => {
-                timedLog(`** all channels joined`);
+                timedLog(`** BOT: All channels joined`);
             }).catch(e => {
-                timedLog(`** error joining channels: ${e}`);
+                timedLog(`** BOT: Error joining channels: ${e}`);
             });
         });
     });
@@ -372,7 +373,7 @@ const onChat = (channel, userstate, message, self) => {
             }
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -388,7 +389,7 @@ const onHost = (channel, username, viewers, autohost) => {
                 client.say(channel, message);
             }
         }).catch(err => {
-            timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
         });
     }
 }
@@ -404,7 +405,7 @@ const onRaid = (channel, username, viewers) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -422,7 +423,7 @@ const onResub = (channel, username, monthStreak, message, userstate, methods) =>
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -441,7 +442,7 @@ const onSubGift = (channel, username, monthStreak, recipient, methods, userstate
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -459,7 +460,7 @@ const onSubMysteryGift = (channel, username, numbOfSubs, methods, userstate) => 
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -474,7 +475,7 @@ const onSub = (channel, username, methods, message, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -488,7 +489,7 @@ const onAnonGiftUpgrade = (channel, username, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -503,7 +504,7 @@ const onGiftUpgrade = (channel, username, sender, userstate) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
@@ -518,11 +519,11 @@ const onCheer = (channel, userstate, message) => {
             client.say(channel, message);
         }
     }).catch(err => {
-        timedLog(`** ERROR ON CHANNEL ${channelKey}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
     });
 }
 
-// ===================== INIT CHAT BOT/DB CONNECTION =====================
+// ===================== INIT CHAT BOT/DB/PUBSUB CONNECTION =====================
 
 const opts = {
     identity: {
@@ -565,10 +566,15 @@ const db = mysql.createConnection({
 
 db.connect(err => {
     if (err) {
-        console.error(`** DB Connection failed: ${err.stack}`);
+        console.error(`** BOT: DB Connection failed: ${err.stack}`);
         return;
     }
-    timedLog(`** Connected to DB`);
+    timedLog(`** BOT: Connected to DB`);
+});
+
+const ps = new PubSub();
+ps.subscribe(105223068, 'channel-points-channel-v1', 'shaq2omndkemx0htaifkzx7qxxnx6q', message => {
+    console.log(message);
 });
 
 // ===================== INIT API SERVER =====================
@@ -577,17 +583,17 @@ const actions = {
     refreshChannelData: channelID => {
         db.query("SELECT name from channels where id=?", [channelID], (err, results) => {
             if (err) {
-                timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
+                timedLog(`** BOT: ERROR refreshing channel ${channel}: ${err}`);
                 return;
             }
             const channel = results[0].name;
             if (channels[channel] !== undefined) {
-                timedLog(`** refreshing data for channel ${channel}...`);
+                timedLog(`** BOT: refreshing data for channel ${channel}...`);
                 deleteChannel(channel);
                 fetchChannelData(channel).then(_ => {
-                    timedLog(`** refreshed channel ${channel}`);
+                    timedLog(`** BOT: refreshed channel ${channel}`);
                 }).catch(err => {
-                    timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
+                    timedLog(`** BOT: ERROR refreshing channel ${channel}: ${err}`);
                 })
             }
         });

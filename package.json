@@ -7,7 +7,8 @@
     "dotenv": "^8.2.0",
     "mysql": "^2.18.1",
     "nodemailer": "^6.4.6",
-    "tmi.js": "^1.5.0"
+    "tmi.js": "^1.5.0",
+    "ws": "^7.3.1"
   },
   "devDependencies": {},
   "scripts": {
