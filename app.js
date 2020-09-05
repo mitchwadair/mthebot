@@ -573,9 +573,6 @@ db.connect(err => {
 });
 
 const ps = new PubSub();
-ps.subscribe(105223068, 'channel-points-channel-v1', 'shaq2omndkemx0htaifkzx7qxxnx6q', message => {
-    console.log(message);
-});
 
 // ===================== INIT API SERVER =====================
 
