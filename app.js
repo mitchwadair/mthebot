@@ -301,6 +301,10 @@ const onConnected = (address, port) => {
     timedLog(`** BOT: Connected to ${address}:${port}`);
     timedLog(`** BOT: Joining all serviced channels...`);
     db.query("SELECT id,enabled from channels", (err, results, fields) => {
+        if (err) {
+            timedLog(`** BOT: Error querying DB for channels: ${err}`);
+            return;
+        }
         let toJoin = results ? results.filter(res => res.enabled).map(res => {
             return res.id;
         }) : [];
