@@ -31,8 +31,7 @@ module.exports = function(db, actions) {
     const requireAuth = (req, res, next) => {
         //let all requests through in dev mode
         if (process.env.NODE_ENV === 'development') {
-            next();
-            return;
+            return next();
         }
 
         const channel = req.params.channel;
@@ -48,40 +47,39 @@ module.exports = function(db, actions) {
                     delete sessionPool[channel];
                 }, 300000),
             }
-            next();
-            return;
+            return next();
         } else {
-            const headers = {
-                'Authorization': req.headers.authorization,
-                'Client-ID': process.env.CLIENT_ID,
-            }
-            https.get('https://id.twitch.tv/oauth2/validate', {headers: headers}, r => {
-                let body = [];
-                r.on('error', err => {
-                    res.writeHead(err.status);
-                    res.end(`ERROR: ${err}`);
-                }).on('data', chunk => {
-                    body.push(chunk);
-                }).on('end', _ => {
-                    body = JSON.parse(Buffer.concat(body).toString());
-                    if (body.expires_in < 3600) {
-                        res.writeHead(401);
-                        res.end('OAuth Token Expired');
-                    } else if (body.user_id !== channel) {
-                        res.writeHead(401);
-                        res.end('Unauthorized request to private API');
-                    } else {
-                        sessionPool[channel] = {
-                            timeout: setTimeout(_ => {
-                                clearTimeout(sessionPool[channel].timeout);
-                                delete sessionPool[channel];
-                            }, 300000),
+            if (req.headers.authorization) {
+                const headers = {
+                    'Authorization': req.headers.authorization,
+                    'Client-ID': process.env.CLIENT_ID,
+                }
+                https.get('https://id.twitch.tv/oauth2/validate', {headers: headers}, r => {
+                    let body = [];
+                    r.on('error', err => {
+                        res.status(err.status).end(`ERROR: ${err}`);
+                    }).on('data', chunk => {
+                        body.push(chunk);
+                    }).on('end', _ => {
+                        body = JSON.parse(Buffer.concat(body).toString());
+                        if (body.expires_in < 3600) {
+                            res.status(401).end('OAuth Token Expired');
+                        } else if (body.user_id !== channel) {
+                            res.status(401).end('Unauthorized request to private API');
+                        } else {
+                            sessionPool[channel] = {
+                                timeout: setTimeout(_ => {
+                                    clearTimeout(sessionPool[channel].timeout);
+                                    delete sessionPool[channel];
+                                }, 300000),
+                            }
+                            return next();
                         }
-                        next();
-                        return;
-                    }
+                    });
                 });
-            });
+            } else {
+                res.status(401).end('Unauthorized request to private API');
+            }
         }
     }
 
@@ -99,7 +97,8 @@ module.exports = function(db, actions) {
     })
 
     // COMMANDS API Routes
-    server.route('/commands/:channel/:alias?', requireAuth)
+    server.route('/commands/:channel/:alias?')
+        .all(requireAuth)
         .get((req, res) => {commands.get(db, req, res)})
         .post((req, res) => {commands.post(db, actions, req, res)})
         .put((req, res) => {commands.put(db, actions, req, res)})
