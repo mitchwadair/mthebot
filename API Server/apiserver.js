@@ -119,5 +119,5 @@ module.exports = function(db, actions) {
         }
     }
 
-    server.listen(port, _ => {timedLog(`API Server listening on port ${port}`)});
+    server.listen(port, _ => {timedLog(`** API Server listening on port ${port}`)});
 }
