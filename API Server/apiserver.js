@@ -85,32 +85,24 @@ module.exports = function(db, actions) {
         }
     }
 
+    // use express.json for body parsing
     server.use(express.json());
 
+    // check if channel exists for all routes with channel param
+    server.param('channel', (req, res, next, id) => {
+        channelExistsInDB(db, id).then(_ => {
+            return next();
+        }).catch(err => {
+            res.writeHead(404);
+            return res.end(`Channel ${id} not found`);
+        });
+    })
+
+    // COMMANDS API Routes
     server.route('/commands/:channel', requireAuth)
-        .all((req, res, next) => {
-            channelExistsInDB(db, req.params.channel).then(_ => {
-                next();
-                return;
-            }).catch(err => {
-                res.writeHead(404);
-                res.end(`Channel ${req.params.channel} not found`);
-                return;
-            });
-        })
         .get((req, res) => {commands.getAll(db, req, res)})
         .post((req, res) => {commands.post(db, actions, req, res)});
     server.route('/commands/:channel/:alias', requireAuth)
-        .all((req, res, next) => {
-            channelExistsInDB(db, req.params.channel).then(_ => {
-                next();
-                return;
-            }).catch(err => {
-                res.writeHead(404);
-                res.end(`Channel ${req.params.channel} not found`);
-                return;
-            });
-        })
         .get((req, res) => {commands.getId(db, req, res)})
         .put((req, res) => {commands.put(db, actions, req, res)})
         .delete((req, res) => {commands.remove(db, actions, req, res)});
