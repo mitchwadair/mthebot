@@ -15,48 +15,40 @@ const schema = {
 const get = (db, req, res) => {
     const channel = req.params.channel;
     const cmd = req.params.alias;
-    if (req.params.alias) {
-        getId(db, res, channel, cmd);
-    } else {
-        getAll(db, res, channel);
-    }
-}
-
-const getAll = (db, res, channel) => {
-    db.query(`SELECT * FROM commands WHERE channel_id=?`, [channel], (err, results) => {
-        if (err) {
-            res.status(500).end(err.toString());
-            return;
-        }
-        const responseBody = results.map(c => {
-            return {
-                alias: c.alias,
-                message: c.message,
-                cooldown: c.cooldown,
-                user_level: c.user_level,
+    if (cmd) {
+        db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, cmd], (err, results) => {
+            if (err) {
+                res.status(500).end(err.toString());
+                return;
+            } else if (!results.length) {
+                res.status(404).end(`Command ${cmd} not found for channel ${channel}`);
+                return;
             }
+            const responseBody = {
+                alias: results[0].alias,
+                message: results[0].message,
+                cooldown: results[0].cooldown,
+                user_level: results[0].user_level,
+            }
+            res.status(200).json(responseBody);
         });
-        res.status(200).json(responseBody);
-    });
-}
-
-const getId = (db, res, channel, cmd) => {
-    db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, cmd], (err, results) => {
-        if (err) {
-            res.status(500).end(err.toString());
-            return;
-        } else if (!results.length) {
-            res.status(404).end(`Command ${cmd} not found for channel ${channel}`);
-            return;
-        }
-        const responseBody = {
-            alias: results[0].alias,
-            message: results[0].message,
-            cooldown: results[0].cooldown,
-            user_level: results[0].user_level,
-        }
-        res.status(200).json(responseBody);
-    });
+    } else {
+        db.query(`SELECT * FROM commands WHERE channel_id=?`, [channel], (err, results) => {
+            if (err) {
+                res.status(500).end(err.toString());
+                return;
+            }
+            const responseBody = results.map(c => {
+                return {
+                    alias: c.alias,
+                    message: c.message,
+                    cooldown: c.cooldown,
+                    user_level: c.user_level,
+                }
+            });
+            res.status(200).json(responseBody);
+        });
+    }
 }
 
 const post = (db, actions, req, res) => {
