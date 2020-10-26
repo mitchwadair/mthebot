@@ -5,6 +5,7 @@
     </br></br>
     <a href="LICENSE"><img src='https://img.shields.io/apm/l/atomic-design-ui.svg' alt="license"></a>
     <a href="https://github.com/mitchwadair/mthebot/pulls"><img src='https://img.shields.io/badge/PRs-welcome-brightgreen.svg' alt="contribute"></a>
+    <img src="https://github.com/mitchwadair/mthebot/workflows/CodeQL/badge.svg?branch=master" alt="codeql"/>
     <a href="https://github.com/mitchwadair/mthebot/releases">
         <img src='https://img.shields.io/github/release/mitchwadair/mthebot.svg' alt="release">
     </a>
