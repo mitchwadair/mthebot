@@ -100,7 +100,7 @@ module.exports = function(db, actions) {
 
     // COMMANDS API Routes
     server.route('/commands/:channel/:alias?', requireAuth)
-        .get((req, res) => {if (req.params.alias) commands.getId(db, req, res); else commands.getAll(db, req, res)})
+        .get((req, res) => {commands.get(db, req, res)})
         .post((req, res) => {commands.post(db, actions, req, res)})
         .put((req, res) => {commands.put(db, actions, req, res)})
         .delete((req, res) => {commands.remove(db, actions, req, res)});

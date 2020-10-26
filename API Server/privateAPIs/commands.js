@@ -12,8 +12,17 @@ const schema = {
     user_level: 'number'
 }
 
-const getAll = (db, req, res) => {
+const get = (db, req, res) => {
     const channel = req.params.channel;
+    const cmd = req.params.alias;
+    if (req.params.alias) {
+        getId(db, res, channel, cmd);
+    } else {
+        getAll(db, res, channel);
+    }
+}
+
+const getAll = (db, res, channel) => {
     db.query(`SELECT * FROM commands WHERE channel_id=?`, [channel], (err, results) => {
         if (err) {
             res.status(500).end(err.toString());
@@ -31,9 +40,7 @@ const getAll = (db, req, res) => {
     });
 }
 
-const getId = (db, req, res) => {
-    const channel = req.params.channel;
-    const cmd = req.params.alias;
+const getId = (db, res, channel, cmd) => {
     db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, cmd], (err, results) => {
         if (err) {
             res.status(500).end(err.toString());
@@ -124,8 +131,7 @@ const remove = (db, actions, req, res) => {
 }
 
 module.exports = {
-    getAll,
-    getId,
+    get,
     post,
     put,
     remove
