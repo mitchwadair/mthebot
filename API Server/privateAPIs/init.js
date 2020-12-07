@@ -3,8 +3,6 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const getArgsFromURL = require('../utils').getArgsFromURL;
-
 const post = (db, actions, req, res) => {
     const defaultEvents = {
         "sub": {
@@ -44,8 +42,8 @@ const post = (db, actions, req, res) => {
             "message": "{{user}} upgraded their gifted sub!"
         }
     }
-    const channel = getArgsFromURL(req.url)[0];
-    const token = req.headers.authorization.replace('Bearer ', '');
+    const channel = req.params.channel;
+    const token = req.header('Authorization').replace('Bearer ', '');
     let query = `INSERT INTO channels (id, name, token, enabled) VALUES (${channel}, "", AES_ENCRYPT("${token}", "${process.env.CLIENT_SECRET}"), true);`;
     let eventsQuery = `INSERT INTO events (channel_id, name, message, enabled) VALUES`
     Object.keys(defaultEvents).forEach((k, i) => {
@@ -54,34 +52,23 @@ const post = (db, actions, req, res) => {
     db.query(query, err => {
         if (err) {
             if (err.code === 'ER_DUP_ENTRY') {
-                res.writeHead(400);
-                res.end(`Channel ${channel} already exists`);
+                res.status(400).send(`Channel ${channel} already exists`);
                 return
             }
-            res.writeHead(500);
-            res.end(err.toString());
+            res.status(500).send(err.toString());
             return;
         }
         db.query(eventsQuery, e => {
             if (e) {
-                res.writeHead(500);
-                res.end(e.toString());
+                res.status(500).send(e.toString());
                 return;
             }
             actions.joinChannel(channel);
-            res.writeHead(200);
-            res.end("Channel data created");
+            res.status(200).send("Channel data created");
         });
     });
 }
 
-module.exports = (db, actions, req, res) => {
-    switch (req.method) {
-        case 'POST':
-            post(db, actions, req, res);
-            break;
-        default:
-            res.writeHead(400);
-            res.end('Bad Request');
-    }
+module.exports = {
+    post
 }

@@ -57,15 +57,15 @@ module.exports = function(db, actions) {
                 https.get('https://id.twitch.tv/oauth2/validate', {headers: headers}, r => {
                     let body = [];
                     r.on('error', err => {
-                        res.status(err.status).end(`ERROR: ${err}`);
+                        res.status(err.status).send(`ERROR: ${err}`);
                     }).on('data', chunk => {
                         body.push(chunk);
                     }).on('end', _ => {
                         body = JSON.parse(Buffer.concat(body).toString());
                         if (body.expires_in < 3600) {
-                            res.status(401).end('OAuth Token Expired');
+                            res.status(401).send('OAuth Token Expired');
                         } else if (body.user_id !== channel) {
-                            res.status(401).end('Unauthorized request to private API');
+                            res.status(401).send('Unauthorized request to private API');
                         } else {
                             sessionPool[channel] = {
                                 timeout: setTimeout(_ => {
@@ -78,7 +78,7 @@ module.exports = function(db, actions) {
                     });
                 });
             } else {
-                res.status(401).end('Unauthorized request to private API');
+                res.status(401).send('Unauthorized request to private API');
             }
         }
     }
@@ -88,13 +88,18 @@ module.exports = function(db, actions) {
 
     // check if channel exists for all routes with channel param
     server.param('channel', (req, res, next, id) => {
-        channelExistsInDB(db, id).then(_ => {
+        const route = req.route.path.split('/')[1];
+        if (route === 'init') {
             return next();
-        }).catch(err => {
-            res.writeHead(404);
-            return res.end(`Channel ${id} not found`);
-        });
-    })
+        } else {
+            channelExistsInDB(db, id).then(_ => {
+                return next();
+            }).catch(err => {
+                res.status(404);
+                return res.send(`Channel ${id} not found`);
+            });
+        }
+    });
 
     // COMMANDS API Routes
     server.route('/commands/:channel/:alias?')
@@ -129,6 +134,11 @@ module.exports = function(db, actions) {
     server.route('/auth/:channel')
         .all(requireAuth)
         .post((req, res) => {auth.post(db, actions, req, res)});
+
+    // INIT API ROUTES
+    server.route('/init/:channel')
+        .all(requireAuth)
+        .post((req, res) => {init.post(db, actions, req, res)});
 
     // request handler
     const apiRequestHandler = (req, res) => {
