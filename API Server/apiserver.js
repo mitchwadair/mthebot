@@ -144,8 +144,13 @@ module.exports = function(db, actions) {
 
     // ==== PUBLIC APIS ====
 
+    // CONTACT API ROUTES
     server.route('/contact')
         .post(contact.post);
+
+    // USERS API ROUTES
+    server.route('/users')
+        .get((req, res) => {users.get(db, req, res)});
 
     // request handler
     const apiRequestHandler = (req, res) => {
