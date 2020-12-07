@@ -34,7 +34,7 @@ const post = (db, actions, sessionPool, req, res) => {
                             delete sessionPool[sessionId]
                         }, r.expires_in * 1000)
                     }
-                    res.status(200).json({...data.data[0], session_token: sessionId});
+                    res.status(200).json({user_data: data.data[0], session_token: sessionId});
                 }
             );
         }).catch(err => {
