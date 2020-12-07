@@ -153,4 +153,5 @@ module.exports = function(db, actions) {
         .get((req, res) => {users.get(db, req, res)});
 
     server.listen(port, _ => {timedLog(`** API Server listening on port ${port}`)});
+    return server;
 }
