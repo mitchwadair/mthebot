@@ -9,7 +9,6 @@ const commands = require('./privateAPIs/commands');
 const timers = require('./privateAPIs/timers');
 const events = require('./privateAPIs/events');
 const chats = require('./privateAPIs/chats');
-const init = require('./privateAPIs/init');
 const contact = require('./publicAPIs/contact');
 const auth = require('./publicAPIs/auth');
 
@@ -112,16 +111,11 @@ module.exports = function(db, actions) {
         .post((req, res) => {chats.post(actions, req, res)})
         .delete((req, res) => {chats.remove(actions, req, res)});    
 
-    // INIT API ROUTES
-    server.route('/init/:channel')
-        .all(requireAuth)
-        .post((req, res) => {init.post(db, actions, req, res)});
-
     // ==== PUBLIC APIS ====
 
     // AUTH API ROUTES
     server.route('/auth')
-        .post((req, res) => {auth.post(db, actions, sessionPool, req, res)});
+        .post((req, res) => {auth.post(actions, sessionPool, req, res)});
 
     // CONTACT API ROUTES
     server.route('/contact')

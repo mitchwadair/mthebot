@@ -5,6 +5,8 @@
 
 const mysql = require('mysql');
 const {timedLog} = require('./utils');
+const defaultEvents = require('./defaultEvents.json');
+const e = require('express');
 
 class DBService {
     constructor() {
@@ -29,6 +31,44 @@ class DBService {
         });
 
         return DBService._instance;
+    }
+
+    initChannel(id, name, authToken, refreshToken) {
+        return new Promise((resolve, reject) => {
+            let query = `INSERT INTO channels (id, name, token, refresh_token, enabled) VALUES (${id}, "${name}", AES_ENCRYPT("${authToken}", "${process.env.CLIENT_SECRET}"), AES_ENCRYPT("${refreshToken}", "${process.env.CLIENT_SECRET}"), false);`;
+            let eventsQuery = `INSERT INTO events (channel_id, name, message, enabled) VALUES`
+            Object.keys(defaultEvents).forEach((k, i) => {
+                eventsQuery = `${eventsQuery} (${id}, "${k}", "${defaultEvents[k].message}", ${defaultEvents[k].enabled})${i === Object.keys(defaultEvents).length - 1 ? ';' : ','}`
+            });
+            this.db.query(query, err => {
+                if (err) {
+                    reject(err);
+                } else {
+                    this.db.query(eventsQuery, e => {
+                        if (e) {
+                            reject(e);
+                        } else {
+                            resolve(true);
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    updateTokensForChannel(id, accessToken, refreshToken) {
+        return new Promise((resolve, reject) => {
+            this.db.query(
+                `UPDATE channels SET token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}'), refresh_token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}') WHERE id=?`,
+                [accessToken, refreshToken, id],
+                err => {
+                    if (err)
+                        reject(err);
+                    else
+                        resolve(true);
+                }
+            );
+        });
     }
 
     getChannel(id) {

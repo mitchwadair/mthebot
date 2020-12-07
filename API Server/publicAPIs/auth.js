@@ -4,9 +4,10 @@
 // https://opensource.org/licenses/MIT
 
 const {httpsRequest} = require('../../utils');
+const DBService = require('../../dbservice');
 const crypto = require('crypto');
 
-const post = (db, actions, sessionPool, req, res) => {
+const post = (actions, sessionPool, req, res) => {
     const code = req.body.code;
     const redirectURI = process.env.NODE_ENV == 'development' ? 'http://localhost:8081/auth' : 'https://bot.mtheb.tv/auth';
     httpsRequest(
@@ -17,29 +18,38 @@ const post = (db, actions, sessionPool, req, res) => {
             'Client-ID': process.env.CLIENT_ID,
             'Authorization': `Bearer ${r.access_token}`
         }
-        httpsRequest(`https://api.twitch.tv/helix/users`, {headers: headers, method: 'GET'}).then(data => {
-            db.query(
-                `UPDATE channels SET token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}'), refresh_token=AES_ENCRYPT(?, '${process.env.CLIENT_SECRET}') WHERE id=?`,
-                [r.access_token, r.refresh_token, data.data[0].id],
-                err => {
-                    if (err) {
-                        res.status(500).send(err.toString());
-                        return;
-                    }
-                    actions.refreshChannelData(data.data[0].id);
-                    let sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
-                    while (sessionPool[sessionId]) {
-                        sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
-                    }
-                    sessionPool[sessionId] = {
-                        channel_id: data.data[0].id,
-                        timeout: setTimeout(_ => {
-                            delete sessionPool[sessionId]
-                        }, r.expires_in * 1000)
-                    }
-                    res.status(200).json({user_data: data.data[0], session_token: sessionId});
+        httpsRequest(`https://api.twitch.tv/helix/users`, {headers: headers, method: 'GET'}).then(user => {
+            const createSession = _ => {
+                actions.refreshChannelData(user.data[0].id);
+                let sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
+                while (sessionPool[sessionId]) {
+                    sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
                 }
-            );
+                sessionPool[sessionId] = {
+                    channel_id: user.data[0].id,
+                    timeout: setTimeout(_ => {
+                        delete sessionPool[sessionId]
+                    }, r.expires_in * 1000)
+                }
+                res.status(200).json({user_data: user.data[0], session_token: sessionId});
+            }
+            DBService.getChannel(user.data[0].id).then(data => {
+                if (data) {
+                    DBService.updateTokensForChannel(user.data[0].id, r.access_token, r.refresh_token).then(_ => {
+                        createSession();
+                    }).catch(err => {
+                        res.status(500).send(err.toString());
+                    })
+                } else {
+                    DBService.initChannel(user.data[0].id, user.data[0].login, r.access_token, r.refresh_token).then(_ => {
+                        createSession();
+                    }).catch(err => {
+                        res.status(500).send(err.toString());
+                    });
+                }
+            }).catch(err => {
+                res.status(500).send(err.toString());
+            });
         }).catch(err => {
             res.status(500).send(err.toString());
         });
