@@ -6,18 +6,6 @@
 const https = require('https');
 
 module.exports = {
-    channelExistsInDB: (db, channel) => {
-        return new Promise((resolve, reject) => {
-            db.query(`SELECT NULL FROM channels WHERE id=?`, [channel], (err, results) => {
-                if (err) {
-                    reject(err)
-                } else if (!results.length) {
-                    reject('not found');
-                }
-                resolve(true);
-            });
-        });
-    },
     validateData: (schema, data) => {
         const diffKeys = (exp, act) => {
             let k1 = Object.keys(exp);

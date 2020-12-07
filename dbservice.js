@@ -44,6 +44,17 @@ class DBService {
         });
     }
 
+    getEnabledChannels() {
+        return new Promise((resolve, reject) => {
+            this.db.query("SELECT id FROM channels WHERE enabled=1", (err, results) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve(results.map(r => r.id));
+            });
+        });
+    }
+
     initChannel(id, name, authToken, refreshToken) {
         return new Promise((resolve, reject) => {
             let query = `INSERT INTO channels (id, name, token, refresh_token, enabled) VALUES (${id}, "${name}", AES_ENCRYPT("${authToken}", "${process.env.CLIENT_SECRET}"), AES_ENCRYPT("${refreshToken}", "${process.env.CLIENT_SECRET}"), false);`;
@@ -91,6 +102,17 @@ class DBService {
                     resolve(undefined);
                 }
                 resolve(results[0]);
+            });
+        });
+    }
+
+    updateNameForChannel(name, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`UPDATE channels SET name=? WHERE id=?`, [name, id], err => {
+                if (err) {
+                    reject(err);
+                }
+                resolve();
             });
         });
     }

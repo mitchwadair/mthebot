@@ -12,13 +12,13 @@ const chats = require('./privateAPIs/chats');
 const contact = require('./publicAPIs/contact');
 const auth = require('./publicAPIs/auth');
 
-const {channelExistsInDB, httpsRequest} = require('../utils');
+const DBService = require('../dbservice');
 
 const timedLog = message => {
     console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
 }
 
-module.exports = function(db, actions) {
+module.exports = function(actions) {
     const server = express();
     const port = process.env.PORT || 8080;
 
@@ -67,17 +67,15 @@ module.exports = function(db, actions) {
 
     // check if channel exists for all routes with channel param
     server.param('channel', (req, res, next, id) => {
-        const route = req.route.path.split('/')[1];
-        if (route === 'init') {
-            return next();
-        } else {
-            channelExistsInDB(db, id).then(_ => {
+        DBService.getChannel(id).then(channel => {
+            if (channel) {
                 return next();
-            }).catch(err => {
-                res.status(404);
-                return res.send(`Channel ${id} not found`);
-            });
-        }
+            } else {
+                res.status(404).send(`Channel ${id} not found`);
+            }
+        }).catch(err => {
+            res.status(500).send(err.toString());
+        });
     });
 
     // ==== PRIVATE APIS ====
