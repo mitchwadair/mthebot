@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const httpsRequest = require('./utils').httpsRequest;
+const httpsRequest = require('../utils').httpsRequest;
 
 let headers = {
     'Client-ID': process.env.CLIENT_ID,
@@ -105,6 +105,7 @@ module.exports = {
                             getCountForPage(data.pagination.cursor, callback);
                         }
                     }).catch(err => {
+                        console.log(err);
                         reject(err);
                     });
                 }

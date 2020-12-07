@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
+const https = require('https');
 
 module.exports = {
     channelExistsInDB: (db, channel) => {
@@ -44,5 +44,26 @@ module.exports = {
             return e;
         }
         return true;
-    }
+    },
+    httpsRequest: (url, options) => {
+        return new Promise((resolve, reject) => {
+            https.request(url, options, res => {
+                let data = []
+                res.on('error', err => {
+                    reject(err);
+                }).on('data', chunk => {
+                    data.push(chunk);
+                }).on('end', _ => {
+                    data = JSON.parse(Buffer.concat(data).toString());
+                    if (data.error) {
+                        reject(data);
+                    } else {
+                        resolve(data);
+                    }
+                });
+            }).on('error', err => {
+                reject(err);
+            }).end();
+        });
+    },
 }

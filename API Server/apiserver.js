@@ -4,7 +4,6 @@
 // https://opensource.org/licenses/MIT
 
 const express = require('express');
-const https = require('https');
 const users = require('./publicAPIs/users');
 const commands = require('./privateAPIs/commands');
 const timers = require('./privateAPIs/timers');
@@ -12,9 +11,9 @@ const events = require('./privateAPIs/events');
 const chats = require('./privateAPIs/chats');
 const init = require('./privateAPIs/init');
 const contact = require('./publicAPIs/contact');
-const auth = require('./privateAPIs/auth');
+const auth = require('./publicAPIs/auth');
 
-const {channelExistsInDB} = require('./utils');
+const {channelExistsInDB, httpsRequest} = require('../utils');
 
 const timedLog = message => {
     console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
@@ -33,49 +32,20 @@ module.exports = function(db, actions) {
             return next();
         }
 
+        const session = req.headers.authorization.replace('Bearer ', '');
         const channel = req.params.channel;
 
         // manage the session pool
         // if the user has an active session (timed out in 5 minutes), let the request through
         // if not, make a request to Twitch to ensure the user's auth token matches for the channel
-        if (sessionPool[channel]) {
-            clearTimeout(sessionPool[channel].timeout);
-            sessionPool[channel] = {
-                timeout: setTimeout(_ => {
-                    clearTimeout(sessionPool[channel].timeout);
-                    delete sessionPool[channel];
-                }, 300000),
+        if (sessionPool[session]) {
+            if (sessionPool[session].channel !== channel) {
+                res.status(401).send('Unauthorized request to private API');
             }
             return next();
         } else {
             if (req.headers.authorization) {
-                const headers = {
-                    'Authorization': req.headers.authorization,
-                    'Client-ID': process.env.CLIENT_ID,
-                }
-                https.get('https://id.twitch.tv/oauth2/validate', {headers: headers}, r => {
-                    let body = [];
-                    r.on('error', err => {
-                        res.status(err.status).send(`ERROR: ${err}`);
-                    }).on('data', chunk => {
-                        body.push(chunk);
-                    }).on('end', _ => {
-                        body = JSON.parse(Buffer.concat(body).toString());
-                        if (body.expires_in < 3600) {
-                            res.status(401).send('OAuth Token Expired');
-                        } else if (body.user_id !== channel) {
-                            res.status(401).send('Unauthorized request to private API');
-                        } else {
-                            sessionPool[channel] = {
-                                timeout: setTimeout(_ => {
-                                    clearTimeout(sessionPool[channel].timeout);
-                                    delete sessionPool[channel];
-                                }, 300000),
-                            }
-                            return next();
-                        }
-                    });
-                });
+                res.status(401).send('Session expired');
             } else {
                 res.status(401).send('Unauthorized request to private API');
             }
@@ -141,12 +111,7 @@ module.exports = function(db, actions) {
         .all(requireAuth)
         .get((req, res) => {chats.get(db, req, res)})
         .post((req, res) => {chats.post(db, actions, req, res)})
-        .delete((req, res) => {chats.remove(db, actions, req, res)});
-
-    // AUTH API ROUTES
-    server.route('/auth/:channel')
-        .all(requireAuth)
-        .post((req, res) => {auth.post(db, actions, req, res)});
+        .delete((req, res) => {chats.remove(db, actions, req, res)});    
 
     // INIT API ROUTES
     server.route('/init/:channel')
@@ -154,6 +119,10 @@ module.exports = function(db, actions) {
         .post((req, res) => {init.post(db, actions, req, res)});
 
     // ==== PUBLIC APIS ====
+
+    // AUTH API ROUTES
+    server.route('/auth')
+        .post((req, res) => {auth.post(db, actions, sessionPool, req, res)});
 
     // CONTACT API ROUTES
     server.route('/contact')
