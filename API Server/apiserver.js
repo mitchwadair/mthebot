@@ -94,8 +94,8 @@ module.exports = function(db, actions) {
     // EVENTS API ROUTES
     server.route('/events/:channel/:name?')
         .all(requireAuth)
-        .get((req, res) => {events.get(db, req, res)})
-        .put((req, res) => {events.put(db, actions, req, res)});
+        .get(events.get)
+        .put((req, res) => {events.put(actions, req, res)});
 
     // TIMERS API ROUTES
     server.route('/timers/:channel/:name?')

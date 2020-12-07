@@ -157,6 +157,61 @@ class DBService {
             });
         });
     }
+
+    getAllEventsForChannel(id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`SELECT * FROM events WHERE channel_id=?`, [id], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const data = results.map(c => {
+                        return {
+                            name: c.name,
+                            message: c.message,
+                            enabled: c.enabled ? true : false
+                        }
+                    });
+                    resolve(data);
+                }
+            });
+        });
+    }
+
+    getEventForChannel(name, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`SELECT * FROM events WHERE channel_id=? and name=?`, [id, name], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else if (!results.length) {
+                    resolve(undefined);
+                } else {
+                    const data = {
+                        name: results[0].name,
+                        message: results[0].message,
+                        enabled: results[0].enabled ? true : false,
+                    }
+                    resolve(data);
+                }
+            });
+        });
+    }
+
+    updateEventForChannel(name, data, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(
+                `UPDATE events SET name=?, message=?, enabled=? where channel_id=? and name=?`,
+                [name, data.message, data.enabled, id, name],
+                (err, results) => {
+                    if (err)
+                        reject(err);
+                    else if (!results.affectedRows)
+                        resolve(undefined);
+                    else
+                        resolve(data);
+                }
+            );
+        });
+    }
 }
 
 const instance = new DBService();
