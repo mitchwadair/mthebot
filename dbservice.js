@@ -165,7 +165,7 @@ class DBService {
                 }
             }).catch(err => {
                 reject(err);
-            })
+            });
         });
     }
 
@@ -250,6 +250,101 @@ class DBService {
                         resolve(data);
                 }
             );
+        });
+    }
+
+    getAllTimersForChannel(id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`SELECT * FROM timers WHERE channel_id=?`, [id], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const data = results.map(c => {
+                        return {
+                            name: c.name,
+                            message: c.message,
+                            enabled: c.enabled ? true : false,
+                            interval: c.interval,
+                            message_threshold: c.message_threshold
+                        }
+                    });
+                    resolve(data);
+                }
+            });
+        });
+    }
+
+    getTimerForChannel(name, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`SELECT * FROM timers WHERE channel_id=? and name=?`, [id, name], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else if (!results.length) {
+                    resolve(undefined);
+                } else {
+                    const data = {
+                        name: results[0].name,
+                        message: results[0].message,
+                        enabled: results[0].enabled ? true : false,
+                        interval: results[0].interval,
+                        message_threshold: results[0].message_threshold
+                    }
+                    resolve(data);
+                }
+            });
+        });
+    }
+
+    addTimerForChannel(data, id) {
+        return new Promise((resolve, reject) => {
+            this.getTimerForChannel(data.name, id).then(results => {
+                if (results) {
+                    resolve(undefined);
+                } else {
+                    this.db.query(
+                        `INSERT INTO timers (channel_id, name, enabled, message, \`interval\`, message_threshold) VALUES (?, ?, ?, ?, ?, ?)`,
+                        [id, data.name, data.enabled, data.message, data.interval, data.message_threshold],
+                        err => {
+                            if (err)
+                                reject(err);
+                            else
+                                resolve(data);
+                        }
+                    );
+                }
+            }).catch(err => {
+                reject(err);
+            });
+        });
+    }
+
+    updateTimerForChannel(name, data, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(
+                `UPDATE timers SET name=?, enabled=?, message=?, \`interval\`=?, message_threshold=? where channel_id=? and name=?`,
+                [data.name, data.enabled, data.message, data.interval, data.message_threshold, id, name],
+                (err, results) => {
+                    if (err)
+                        reject(err)
+                    else if (!results.affectedRows)
+                        resolve(undefined);
+                    else
+                        resolve(data);
+                }
+            );
+        });
+    }
+
+    deleteTimerForChannel(name, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`DELETE FROM timers where channel_id=? and name=?`, [id, name], (err, results) => {
+                if (err)
+                    reject(err);
+                else if (!results.affectedRows)
+                    resolve(undefined);
+                else
+                    resolve(true);
+            });
         });
     }
 }

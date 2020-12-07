@@ -99,10 +99,10 @@ module.exports = function(db, actions) {
     // TIMERS API ROUTES
     server.route('/timers/:channel/:name?')
         .all(requireAuth)
-        .get((req, res) => {timers.get(db, req, res)})
-        .post((req, res) => {timers.post(db, actions, req, res)})
-        .put((req, res) => {timers.put(db, actions, req, res)})
-        .delete((req, res) => {timers.remove(db, actions, req, res)});
+        .get(timers.get)
+        .post((req, res) => {timers.post(actions, req, res)})
+        .put((req, res) => {timers.put(actions, req, res)})
+        .delete((req, res) => {timers.remove(actions, req, res)});
 
     // CHATS API ROUTES
     server.route('/chats/:channel')
