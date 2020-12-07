@@ -18,10 +18,10 @@ const get = (db, req, res) => {
     if (cmd) {
         db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, cmd], (err, results) => {
             if (err) {
-                res.status(500).end(err.toString());
+                res.status(500).send(err.toString());
                 return;
             } else if (!results.length) {
-                res.status(404).end(`Command ${cmd} not found for channel ${channel}`);
+                res.status(404).send(`Command ${cmd} not found for channel ${channel}`);
                 return;
             }
             const responseBody = {
@@ -35,7 +35,7 @@ const get = (db, req, res) => {
     } else {
         db.query(`SELECT * FROM commands WHERE channel_id=?`, [channel], (err, results) => {
             if (err) {
-                res.status(500).end(err.toString());
+                res.status(500).send(err.toString());
                 return;
             }
             const responseBody = results.map(c => {
@@ -61,10 +61,10 @@ const post = (db, actions, req, res) => {
     }
     db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [channel, body.alias], (err, results) => {
         if (err) {
-            res.status(500).end(err.toString());
+            res.status(500).send(err.toString());
             return;
         } else if (results.length) {
-            res.status(400).end(`Command ${body.alias} already exists for channel ${channel}`);
+            res.status(400).send(`Command ${body.alias} already exists for channel ${channel}`);
             return;
         }
         db.query(
@@ -72,7 +72,7 @@ const post = (db, actions, req, res) => {
         [channel, body.alias, body.message, body.cooldown, body.user_level],
         err => {
             if (err) {
-                res.status(500).end(err.toString());
+                res.status(500).send(err.toString());
                 return;
             }
             actions.refreshChannelData(channel);
@@ -95,10 +95,10 @@ const put = (db, actions, req, res) => {
     [body.alias, body.message, body.cooldown, body.user_level, channel, cmd],
     (err, results) => {
         if (err) {
-            res.status(500).end(err.toString());
+            res.status(500).send(err.toString());
             return;
         }else if (!results.affectedRows) { 
-            res.status(404).end(`Command ${cmd} not found for channel ${channel}`);
+            res.status(404).send(`Command ${cmd} not found for channel ${channel}`);
             return;
         }
         actions.refreshChannelData(channel);
@@ -111,14 +111,14 @@ const remove = (db, actions, req, res) => {
     const cmd = req.params.alias;
     db.query(`DELETE FROM commands where channel_id=? and alias=?`, [channel, cmd], (err, results) => {
         if (err) {
-            res.status(500).end(err.toString());
+            res.status(500).send(err.toString());
             return;
         }else if (!results.affectedRows) { 
-            res.status(404).end(`Command ${cmd} not found for channel ${channel}`);
+            res.status(404).send(`Command ${cmd} not found for channel ${channel}`);
             return;
         }
         actions.refreshChannelData(channel);
-        res.status(200).end();
+        res.status(200).send();
     });
 }
 
