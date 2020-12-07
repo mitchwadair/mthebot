@@ -104,6 +104,11 @@ module.exports = function(db, actions) {
         .put((req, res) => {commands.put(db, actions, req, res)})
         .delete((req, res) => {commands.remove(db, actions, req, res)});
 
+    server.route('/events/:channel/:name?')
+        .all(requireAuth)
+        .get((req, res) => {events.get(db, req, res)})
+        .put((req, res) => {events.put(db, actions, req, res)});
+
     // request handler
     const apiRequestHandler = (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
