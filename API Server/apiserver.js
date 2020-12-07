@@ -125,6 +125,11 @@ module.exports = function(db, actions) {
         .post((req, res) => {chats.post(db, actions, req, res)})
         .delete((req, res) => {chats.remove(db, actions, req, res)});
 
+    // AUTH API ROUTES
+    server.route('/auth/:channel')
+        .all(requireAuth)
+        .post((req, res) => {auth.post(db, actions, req, res)});
+
     // request handler
     const apiRequestHandler = (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
