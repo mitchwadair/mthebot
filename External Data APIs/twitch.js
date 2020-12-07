@@ -17,8 +17,11 @@ const createHeaderObject = token => {
 
 const validateToken = token => {
     return new Promise((resolve, reject) => {
-        httpsRequest('https://id.twitch.tv/oauth2/validate', {method: 'GET', headers: createHeaderObject(token)}).then(_ => {
-            resolve();
+        httpsRequest('https://id.twitch.tv/oauth2/validate', {method: 'GET', headers: createHeaderObject(token)}).then(data => {
+            if (data.status === 401 && data.message === 'invalid access token')
+                reject(data);
+            else
+                resolve();
         }).catch(err => {
             reject(err);
         });
@@ -30,19 +33,22 @@ const getTokenForChannel = id => {
         DBService.getTokensForChannel(id).then(tokens => {
             validateToken(tokens.access_token).then(_ => {
                 resolve(tokens.access_token);
-            }).catch(_ => {
-                httpsRequest(
-                    `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${tokens.refresh_token}`,
-                    {method: 'POST'}
-                ).then(data => {
-                    DBService.updateTokensForChannel(id, data.access_token, data.refresh_token).then(_ => {
-                        resolve(data.access_token);
+            }).catch(err => {
+                if (err.status === 401 && err.message === 'invalid access token') {
+                    httpsRequest(
+                        `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${tokens.refresh_token}`,
+                        {method: 'POST'}
+                    ).then(data => {
+                        DBService.updateTokensForChannel(id, data.access_token, data.refresh_token).then(_ => {
+                            resolve(data.access_token);
+                        }).catch(err => {
+                            reject(err);
+                        });
                     }).catch(err => {
                         reject(err);
                     });
-                }).catch(err => {
+                } else
                     reject(err);
-                });
             });
         });
     })
@@ -148,7 +154,6 @@ module.exports = {
                             getCountForPage(data.pagination.cursor, callback);
                         }
                     }).catch(err => {
-                        console.log(err);
                         reject(err);
                     });
                 }
