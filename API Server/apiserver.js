@@ -5,7 +5,6 @@
 
 const express = require('express');
 const https = require('https');
-const url = require('url');
 const users = require('./publicAPIs/users');
 const commands = require('./privateAPIs/commands');
 const timers = require('./privateAPIs/timers');
