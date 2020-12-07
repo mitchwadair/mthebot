@@ -104,10 +104,19 @@ module.exports = function(db, actions) {
         .put((req, res) => {commands.put(db, actions, req, res)})
         .delete((req, res) => {commands.remove(db, actions, req, res)});
 
+    // EVENTS API ROUTES
     server.route('/events/:channel/:name?')
         .all(requireAuth)
         .get((req, res) => {events.get(db, req, res)})
         .put((req, res) => {events.put(db, actions, req, res)});
+
+    // TIMERS API ROUTES
+    server.route('/timers/:channel/:name?')
+        .all(requireAuth)
+        .get((req, res) => {timers.get(db, req, res)})
+        .post((req, res) => {timers.post(db, actions, req, res)})
+        .put((req, res) => {timers.put(db, actions, req, res)})
+        .delete((req, res) => {timers.remove(db, actions, req, res)});
 
     // request handler
     const apiRequestHandler = (req, res) => {
