@@ -36,8 +36,7 @@ module.exports = function(db, actions) {
         const channel = req.params.channel;
 
         // manage the session pool
-        // if the user has an active session (timed out in 5 minutes), let the request through
-        // if not, make a request to Twitch to ensure the user's auth token matches for the channel
+        // if the user has an active session, let the request through
         if (sessionPool[session]) {
             if (sessionPool[session].channel !== channel) {
                 res.status(401).send('Unauthorized request to private API');
