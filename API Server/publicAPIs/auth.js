@@ -27,7 +27,10 @@ const post = (db, actions, sessionPool, req, res) => {
                         return;
                     }
                     actions.refreshChannelData(data.data[0].id);
-                    const sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
+                    let sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
+                    while (sessionPool[sessionId]) {
+                        sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
+                    }
                     sessionPool[sessionId] = {
                         channel_id: data.data[0].id,
                         timeout: setTimeout(_ => {
