@@ -108,9 +108,9 @@ module.exports = function(db, actions) {
     // CHATS API ROUTES
     server.route('/chats/:channel')
         .all(requireAuth)
-        .get((req, res) => {chats.get(db, req, res)})
-        .post((req, res) => {chats.post(db, actions, req, res)})
-        .delete((req, res) => {chats.remove(db, actions, req, res)});    
+        .get(chats.get)
+        .post((req, res) => {chats.post(actions, req, res)})
+        .delete((req, res) => {chats.remove(actions, req, res)});    
 
     // INIT API ROUTES
     server.route('/init/:channel')

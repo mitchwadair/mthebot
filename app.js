@@ -8,12 +8,9 @@ const tmi = require('tmi.js');
 const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
 const twitchAPI = require('./External Data APIs/twitch');
+const {timedLog} = require('./utils');
 
 // ===================== HELPER FUNCTIONS =====================
-
-const timedLog = message => {
-    console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
-}
 
 // extend Array to include a 'chunk' function
 // use function rather than arrow func to access 'this'

@@ -3,47 +3,43 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const get = (db, req, res) => {
+const DBService = require('../../dbservice');
+
+const get = (req, res) => {
     const channel = req.params.channel;
-    db.query(`SELECT enabled FROM channels WHERE id=?`, [channel], (err, results) => {
-        if (err) {
-            res.status(500).send(err.toString());
-            return;
-        } else if (!results.length) {
+    DBService.getChannel(channel).then(data => {
+        if (data)
+            res.status(200).send(data.enabled.toString());
+        else 
             res.status(404).send(`Channel ${channel} not found`);
-            return;
-        }
-        res.status(200).send(results[0].enabled.toString());
+    }).catch(err => {
+        res.status(500).send(err.toString());
     });
 }
 
-const post = (db, actions, req, res) => {
+const post = (actions, req, res) => {
     const channel = req.params.channel;
-    db.query(`UPDATE channels SET enabled=true WHERE id=?`, [channel], err => {
-        if (err) {
-            res.status(500).send(err.toString());
-            return;
-        }
-        actions.joinChannel(channel).then(r => {
+    DBService.enableChannel(channel).then(_ => {
+        actions.joinChannel(channel).then(_ => {
             res.status(200).send(`Bot set to enabled for channel ${channel}`);
         }).catch(err => {
             res.status(500).send(err.toString());
         });
+    }).catch(err => {
+        res.status(500).send(err.toString());
     });
 }
 
-const remove = (db, actions, req, res) => {
+const remove = (actions, req, res) => {
     const channel = req.params.channel
-    db.query(`UPDATE channels SET enabled=false WHERE id=?`, [channel], err => {
-        if (err) {
-            res.status(500).send(err.toString());
-            return;
-        }
+    DBService.disableChannel(channel).then(_ => {
         actions.leaveChannel(channel).then(_ => {
             res.status(200).send(`Bot set to disabled for channel ${channel}`);
         }).catch(err => {
             res.status(500).send(err.toString());
         });
+    }).catch(err => {
+        res.status(500).send(err.toString());
     });
 }
 
