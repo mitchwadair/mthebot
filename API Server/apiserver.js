@@ -101,6 +101,8 @@ module.exports = function(db, actions) {
         }
     });
 
+    // ==== PRIVATE APIS ====
+
     // COMMANDS API Routes
     server.route('/commands/:channel/:alias?')
         .all(requireAuth)
@@ -139,6 +141,11 @@ module.exports = function(db, actions) {
     server.route('/init/:channel')
         .all(requireAuth)
         .post((req, res) => {init.post(db, actions, req, res)});
+
+    // ==== PUBLIC APIS ====
+
+    server.route('/contact')
+        .post(contact.post);
 
     // request handler
     const apiRequestHandler = (req, res) => {
