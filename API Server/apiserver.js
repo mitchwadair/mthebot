@@ -85,6 +85,18 @@ module.exports = function(db, actions) {
     // use express.json for body parsing
     server.use(express.json());
 
+    server.use(function(req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+
+        if (req.method === 'OPTIONS') {
+            return res.status(200).send();
+        }
+
+        next();
+      });
+
     // check if channel exists for all routes with channel param
     server.param('channel', (req, res, next, id) => {
         const route = req.route.path.split('/')[1];
