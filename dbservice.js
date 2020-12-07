@@ -6,7 +6,6 @@
 const mysql = require('mysql');
 const {timedLog} = require('./utils');
 const defaultEvents = require('./defaultEvents.json');
-const e = require('express');
 
 class DBService {
     constructor() {
