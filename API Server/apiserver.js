@@ -152,19 +152,5 @@ module.exports = function(db, actions) {
     server.route('/users')
         .get((req, res) => {users.get(db, req, res)});
 
-    // request handler
-    const apiRequestHandler = (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-        // prevent CORS issue
-        if (req.method === 'OPTIONS') {
-            res.writeHead(200);
-            res.end();
-            return;
-        }
-    }
-
     server.listen(port, _ => {timedLog(`** API Server listening on port ${port}`)});
 }
