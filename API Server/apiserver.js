@@ -86,10 +86,10 @@ module.exports = function(db, actions) {
     // COMMANDS API Routes
     server.route('/commands/:channel/:alias?')
         .all(requireAuth)
-        .get((req, res) => {commands.get(db, req, res)})
-        .post((req, res) => {commands.post(db, actions, req, res)})
-        .put((req, res) => {commands.put(db, actions, req, res)})
-        .delete((req, res) => {commands.remove(db, actions, req, res)});
+        .get(commands.get)
+        .post((req, res) => {commands.post(actions, req, res)})
+        .put((req, res) => {commands.put(actions, req, res)})
+        .delete((req, res) => {commands.remove(actions, req, res)});
 
     // EVENTS API ROUTES
     server.route('/events/:channel/:name?')

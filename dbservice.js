@@ -66,6 +66,97 @@ class DBService {
         });
     }
 
+    getAllCommandsForChannel(id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`SELECT * FROM commands WHERE channel_id=?`, [id], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    const data = results.map(c => {
+                        return {
+                            alias: c.alias,
+                            message: c.message,
+                            cooldown: c.cooldown,
+                            user_level: c.user_level,
+                        }
+                    });
+                    resolve(data);
+                }
+            });
+        });
+    }
+
+    getCommandForChannel(alias, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`SELECT * FROM commands WHERE channel_id=? and alias=?`, [id, alias], (err, results) => {
+                if (err) {
+                    reject(err);
+                } else if (!results.length) {
+                    resolve(undefined);
+                } else {
+                    const data = {
+                        alias: results[0].alias,
+                        message: results[0].message,
+                        cooldown: results[0].cooldown,
+                        user_level: results[0].user_level,
+                    }
+                    resolve(data);
+                }
+            });
+        })
+    }
+
+    addCommandForChannel(data, id) {
+        return new Promise((resolve, reject) => {
+            this.getCommandForChannel(data.alias, id).then(results => {
+                if (results) {
+                    resolve(undefined);
+                } else {
+                    this.db.query(
+                        `INSERT INTO commands (channel_id, alias, message, cooldown, user_level) VALUES (?, ?, ?, ?, ?)`,
+                        [id, data.alias, data.message, data.cooldown, data.user_level],
+                        err => {
+                            if (err)
+                                reject(err)
+                            else
+                                resolve(data);
+                        }
+                    );      
+                }
+            }).catch(err => {
+                reject(err);
+            })
+        });
+    }
+
+    updateCommandForChannel(alias, data, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(
+                `UPDATE commands SET alias=?, message=?, cooldown=?, user_level=? where channel_id=? and alias=?`,
+                [data.alias, data.message, data.cooldown, data.user_level, id, alias],
+                (err, results) => {
+                    if (err)
+                        reject(err);
+                    else if (!results.affectedRows) 
+                        resolve(undefined);
+                    else
+                        resolve(data);
+                });
+        });
+    }
+
+    deleteCommandForChannel(alias, id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(`DELETE FROM commands where channel_id=? and alias=?`, [id, alias], (err, results) => {
+                if (err)
+                    reject(err);
+                else if (!results.affectedRows) 
+                    resolve(undefined);
+                else
+                    resolve(true);
+            });
+        });
+    }
 }
 
 const instance = new DBService();
