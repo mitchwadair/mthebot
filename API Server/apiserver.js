@@ -123,7 +123,7 @@ module.exports = function(db, actions) {
 
     // USERS API ROUTES
     server.route('/users')
-        .get((req, res) => {users.get(db, req, res)});
+        .get(users.get);
 
     server.listen(port, _ => {timedLog(`** API Server listening on port ${port}`)});
     return server;

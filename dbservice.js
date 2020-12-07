@@ -33,6 +33,17 @@ class DBService {
         return DBService._instance;
     }
 
+    getUserCount() {
+        return new Promise((resolve, reject) => {
+            this.db.query("SELECT COUNT(*) AS users FROM channels WHERE enabled=1", (err, results) => {
+                if (err)
+                    reject(err);
+                else
+                    resolve(results[0].users);
+            });
+        });
+    }
+
     initChannel(id, name, authToken, refreshToken) {
         return new Promise((resolve, reject) => {
             let query = `INSERT INTO channels (id, name, token, refresh_token, enabled) VALUES (${id}, "${name}", AES_ENCRYPT("${authToken}", "${process.env.CLIENT_SECRET}"), AES_ENCRYPT("${refreshToken}", "${process.env.CLIENT_SECRET}"), false);`;
