@@ -93,6 +93,26 @@ class DBService {
         });
     }
 
+    getTokensForChannel(id) {
+        return new Promise((resolve, reject) => {
+            this.db.query(
+                `SELECT AES_DECRYPT(token, '${process.env.CLIENT_SECRET}') as access_token, AES_DECRYPT(refresh_token, '${process.env.CLIENT_SECRET}') as refresh_token FROM channels WHERE id=?`,
+                [id],
+                (err, results) => {
+                    if (err)
+                        reject(err);
+                    else {
+                        const data = {
+                            access_token: results[0].access_token.toString(),
+                            refresh_token: results[0].refresh_token.toString()
+                        }
+                        resolve(data);
+                    }
+                }
+            );
+        });
+    }
+
     getChannel(id) {
         return new Promise((resolve, reject) => {
             this.db.query('SELECT * FROM channels WHERE id=?', [id], (err, results) => {
