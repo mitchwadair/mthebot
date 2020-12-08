@@ -8,9 +8,9 @@ const DBService = require('../../dbservice');
 const crypto = require('crypto');
 
 const post = (actions, sessionPool, req, res) => {
-    const code = req.body.code;
+    const code = req.body ? req.body.code : null;
     const redirectURI = process.env.NODE_ENV == 'development' ? 'http://localhost:8081/auth' : 'https://bot.mtheb.tv/auth';
-    httpsRequest(
+    code && httpsRequest(
         `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectURI}`,
         {method: 'POST'}
     ).then(r => {
