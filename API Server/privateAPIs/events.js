@@ -19,7 +19,7 @@ const get = (req, res) => {
             if (data)
                 res.status(200).json(data);
             else
-                res.status(404).send(`Event ${evt} not found for channel ${channel}`);
+                res.status(404).send(`Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
             res.status(500).send(err.toString());
         });
@@ -46,7 +46,7 @@ const put = (actions, req, res) => {
             actions.refreshChannelData(channel);
             res.status(200).json(data);
         } else
-            res.status(404).send(`Event ${evt} not found for channel ${channel}`);
+            res.status(404).send(`Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
         res.status(500).send(err.toString());
     });

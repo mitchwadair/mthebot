@@ -11,7 +11,7 @@ const get = (req, res) => {
         if (data)
             res.status(200).send(data.enabled.toString());
         else 
-            res.status(404).send(`Channel ${channel} not found`);
+            res.status(404).send(`Channel ${encodeURIComponent(channel)} not found`);
     }).catch(err => {
         res.status(500).send(err.toString());
     });
@@ -21,7 +21,7 @@ const post = (actions, req, res) => {
     const channel = req.params.channel;
     DBService.enableChannel(channel).then(_ => {
         actions.joinChannel(channel).then(_ => {
-            res.status(200).send(`Bot set to enabled for channel ${channel}`);
+            res.status(200).send(`Bot set to enabled for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
             res.status(500).send(err.toString());
         });
@@ -34,7 +34,7 @@ const remove = (actions, req, res) => {
     const channel = req.params.channel
     DBService.disableChannel(channel).then(_ => {
         actions.leaveChannel(channel).then(_ => {
-            res.status(200).send(`Bot set to disabled for channel ${channel}`);
+            res.status(200).send(`Bot set to disabled for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
             res.status(500).send(err.toString());
         });

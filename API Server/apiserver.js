@@ -63,7 +63,7 @@ module.exports = function(actions) {
         }
 
         next();
-      });
+    });
 
     // check if channel exists for all routes with channel param
     server.param('channel', (req, res, next, id) => {
@@ -71,7 +71,7 @@ module.exports = function(actions) {
             if (channel) {
                 return next();
             } else {
-                res.status(404).send(`Channel ${id} not found`);
+                res.status(404).send(`Channel ${encodeURIComponent(id)} not found`);
             }
         }).catch(err => {
             res.status(500).send(err.toString());
