@@ -3,26 +3,9 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const url = require('url');
+const https = require('https');
 
 module.exports = {
-    getArgsFromURL: _url => {
-        let args = url.parse(_url).pathname.split('/');
-        args.splice(0, 2);
-        return args;
-    },
-    channelExistsInDB: (db, channel) => {
-        return new Promise((resolve, reject) => {
-            db.query(`SELECT NULL FROM channels WHERE id=?`, [channel], (err, results) => {
-                if (err) {
-                    reject(err)
-                } else if (!results.length) {
-                    reject('not found');
-                }
-                resolve(true);
-            });
-        });
-    },
     validateData: (schema, data) => {
         const diffKeys = (exp, act) => {
             let k1 = Object.keys(exp);
@@ -49,5 +32,29 @@ module.exports = {
             return e;
         }
         return true;
+    },
+    httpsRequest: (url, options) => {
+        return new Promise((resolve, reject) => {
+            https.request(url, options, res => {
+                let data = []
+                res.on('error', err => {
+                    reject(err);
+                }).on('data', chunk => {
+                    data.push(chunk);
+                }).on('end', _ => {
+                    data = JSON.parse(Buffer.concat(data).toString());
+                    if (data.error) {
+                        reject(data);
+                    } else {
+                        resolve(data);
+                    }
+                });
+            }).on('error', err => {
+                reject(err);
+            }).end();
+        });
+    },
+    timedLog: message => {
+        console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
     }
 }

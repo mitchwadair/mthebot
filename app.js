@@ -7,13 +7,11 @@ require('dotenv').config();
 const tmi = require('tmi.js');
 const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
+const DBService = require('./dbservice');
 const twitchAPI = require('./External Data APIs/twitch');
+const {timedLog} = require('./utils');
 
 // ===================== HELPER FUNCTIONS =====================
-
-const timedLog = message => {
-    console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
-}
 
 // extend Array to include a 'chunk' function
 // use function rather than arrow func to access 'this'
@@ -164,97 +162,90 @@ const deleteChannel = channel => {
 const fetchChannelData = channelKey => {
     return new Promise((resolve, reject) => {
         twitchAPI.getUser(channelKey).then(data => {
-            db.query(`SELECT name FROM channels WHERE id=${data.id}`, (err, results) => {
-                if (err) {
-                    return reject(err);
-                } else {
-                    if (results[0].name !== channelKey) {
-                        db.query(`UPDATE channels set name='${channelKey}' where id=${data.id}`, err => {
-                            if (err) {
-                                timedLog(`** error updating name for id ${data.id}: ${err}`);
-                            } else {
-                                timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
-                            }
-                        });
-                    }
-
-                    let commands = [];
-                    let events = {};
-                    let timers = [];
-                    let promises = []
-
-                    promises.push(new Promise((resolve, reject) => {
-                        db.query(`SELECT * from commands where channel_id=${data.id}`, (err, results) => {
-                            if (err) {
-                                reject(err);
-                            }
-                            commands = results.map(c => {
-                                return {
-                                    alias: c.alias,
-                                    message: c.message,
-                                    cooldown: c.cooldown,
-                                    user_level: c.user_level,
-                                }
-                            });
-                            resolve();
-                        });
-                    }));
-                    promises.push(new Promise((resolve, reject) => {
-                        db.query(`SELECT * from events where channel_id=${data.id}`, (err, results) => {
-                            if (err) {
-                                reject(err);
-                            }
-                            results.forEach(e => {
-                                events[e.name] = {
-                                    message: e.message,
-                                    enabled: e.enabled
-                                }
-                            });
-                            resolve();
-                        });
-                    }));
-                    promises.push(new Promise((resolve, reject) => {
-                        db.query(`SELECT * from timers where channel_id=${data.id}`, (err, results) => {
-                            if (err) {
-                                reject(err);
-                            }
-                            timers = results.map(t => {
-                                return {
-                                    name: t.name,
-                                    message: t.message,
-                                    enabled: t.enabled,
-                                    interval: t.interval,
-                                    message_threshold: t.message_threshold
-                                }
-                            });
-                            resolve();
-                        });
-                    }));
-
-                    Promise.all(promises).then(_ => {
-                        channels[channelKey] = {
-                            commands: commands,
-                            events: events,
-                            timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                            timers: timers.map((timer, i) => {
-                                if (timer.enabled) {
-                                    return {
-                                        interval: setInterval(_ => {
-                                            if (channels[channelKey].timers[i].messageCount >= timer.message_threshold) {
-                                                channels[channelKey].timers[i].messageCount = 0;
-                                                client.say(`#${channelKey}`, timer.message);
-                                            }
-                                        }, timer.interval*1000),
-                                        messageCount: 0,
-                                    }
-                                }
-                            }),
-                            id: data.id,
-                        }
-                        timedLog(`** fetched data for channel ${channelKey}`);
-                        resolve();
+            DBService.getChannel(data.id).then(channel => {
+                if (channel.name !== channelKey) {
+                    DBService.updateNameForChannel(channelKey, data.id).then(_ => {
+                        timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
+                    }).catch(err => {
+                        timedLog(`** error updating name for id ${data.id}: ${err}`);
                     });
                 }
+
+                let commands = [];
+                let events = {};
+                let timers = [];
+                let promises = []
+
+                promises.push(new Promise((resolve, reject) => {
+                    DBService.getAllCommandsForChannel(data.id).then(cmds => {
+                        commands = cmds.map(c => {
+                            return {
+                                alias: c.alias,
+                                message: c.message,
+                                cooldown: c.cooldown,
+                                user_level: c.user_level,
+                            }
+                        });
+                        resolve();
+                    }).catch(err => {
+                        reject(err);
+                    });
+                }));
+                promises.push(new Promise((resolve, reject) => {
+                    DBService.getAllEventsForChannel(data.id).then(evts => {
+                        evts.forEach(e => {
+                            events[e.name] = {
+                                message: e.message,
+                                enabled: e.enabled
+                            }
+                        });
+                        resolve();
+                    }).catch(err => {
+                        reject(err);
+                    });
+                }));
+                promises.push(new Promise((resolve, reject) => {
+                    DBService.getAllTimersForChannel(data.id).then(tmrs => {
+                        timers = tmrs.map(t => {
+                            return {
+                                name: t.name,
+                                message: t.message,
+                                enabled: t.enabled,
+                                interval: t.interval,
+                                message_threshold: t.message_threshold
+                            }
+                        });
+                        resolve();
+                    }).catch(err => {
+                        reject(err);
+                    });
+                }));
+
+                Promise.all(promises).then(_ => {
+                    channels[channelKey] = {
+                        commands: commands,
+                        events: events,
+                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
+                        timers: timers.map((timer, i) => {
+                            if (timer.enabled) {
+                                return {
+                                    interval: setInterval(_ => {
+                                        if (channels[channelKey].timers[i].messageCount >= timer.message_threshold) {
+                                            channels[channelKey].timers[i].messageCount = 0;
+                                            client.say(`#${channelKey}`, timer.message);
+                                        }
+                                    }, timer.interval*1000),
+                                    messageCount: 0,
+                                }
+                            }
+                        }),
+                        id: data.id,
+                    }
+                    timedLog(`** fetched data for channel ${channelKey}`);
+                    resolve();
+                });
+            }).catch(err => {
+                reject(err);
             });
         }).catch(err => {
             timedLog(`** error getting user data for channel ${channelKey}`)
@@ -298,11 +289,8 @@ const getUserLevel = (userstate) => {
 const onConnected = (address, port) => {
     timedLog(`** MtheBot_ connected to ${address}:${port}`);
     timedLog(`** joining all serviced channels...`);
-    db.query("SELECT id,enabled from channels", (err, results, fields) => {
-        let toJoin = results ? results.filter(res => res.enabled).map(res => {
-            return res.id;
-        }) : [];
-        twitchAPI.getBatchUsersByID(toJoin).then(data => {
+    DBService.getEnabledChannels().then(channels => {
+        twitchAPI.getBatchUsersByID(channels).then(data => {
             let batches = data.chunk(50);
             let promises = [];
             batches.forEach((batch, i) => {
@@ -555,41 +543,22 @@ client.on('cheer', onCheer);
 
 client.connect();
 
-const db = mysql.createConnection({
-    host: process.env.RDS_HOSTNAME,
-    user: process.env.RDS_USERNAME,
-    password: process.env.RDS_PASSWORD,
-    port: process.env.RDS_PORT,
-    database: process.env.RDS_DB_NAME
-});
-
-db.connect(err => {
-    if (err) {
-        console.error(`** DB Connection failed: ${err.stack}`);
-        return;
-    }
-    timedLog(`** Connected to DB`);
-});
-
 // ===================== INIT API SERVER =====================
 
 const actions = {
     refreshChannelData: channelID => {
-        db.query("SELECT name from channels where id=?", [channelID], (err, results) => {
-            if (err) {
-                timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
-                return;
-            }
-            const channel = results[0].name;
-            if (channels[channel] !== undefined) {
+        DBService.getChannel(channelID).then(channel => {
+            if (channels[channel.name] !== undefined) {
                 timedLog(`** refreshing data for channel ${channel}...`);
-                deleteChannel(channel);
-                fetchChannelData(channel).then(_ => {
-                    timedLog(`** refreshed channel ${channel}`);
+                deleteChannel(channel.name);
+                fetchChannelData(channel.name).then(_ => {
+                    timedLog(`** refreshed channel ${channelID}`);
                 }).catch(err => {
-                    timedLog(`** ERROR refreshing channel ${channel}: ${err}`);
+                    timedLog(`** ERROR refreshing channel ${channelID}: ${err}`);
                 })
             }
+        }).catch(err => {
+            timedLog(`** ERROR refreshing channel ${channelID}: ${err}`);
         });
     },
     joinChannel: channel => {
@@ -604,4 +573,4 @@ const actions = {
     }
 }
 
-APIServer(db, actions);
+APIServer(actions);
