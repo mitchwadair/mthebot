@@ -24,13 +24,13 @@ const get = (req, res) => {
             else
                 res.status(404).send(`Timer ${encodeURIComponent(timer)} not found for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     } else {
         DBService.getAllTimersForChannel(channel).then(data => {
             res.status(200).json(data);
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     }
 }
@@ -51,7 +51,7 @@ const post = (actions, req, res) => {
         } else
             res.status(400).send(`Timer ${encodeURIComponent(body.name)} already exists for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
@@ -71,7 +71,7 @@ const put = (actions, req, res) => {
         } else
             res.status(404).send(`Timer ${encodeURIComponent(timer)} not found for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
@@ -85,7 +85,7 @@ const remove = (actions, req, res) => {
         } else
             res.status(404).send(`Timer ${encodeURIComponent(timer)} not found for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 

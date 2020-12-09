@@ -23,13 +23,13 @@ const get = (req, res) => {
             else
                 res.status(404).send(`Command ${encodeURIComponent(cmd)} not found for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     } else {
         DBService.getAllCommandsForChannel(channel).then(data => {
             res.status(200).json(data);
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     }
 }
@@ -50,7 +50,7 @@ const post = (actions, req, res) => {
             res.status(400).send(`Command ${encodeURIComponent(body.alias)} already exists for channel ${encodeURIComponent(channel)}`);
         }
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
@@ -70,7 +70,7 @@ const put = (actions, req, res) => {
         } else 
             res.status(404).send(`Command ${encodeURIComponent(cmd)} not found for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
@@ -84,7 +84,7 @@ const remove = (actions, req, res) => {
         } else
             res.status(404).send(`Command ${encodeURIComponent(cmd)} not found for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 

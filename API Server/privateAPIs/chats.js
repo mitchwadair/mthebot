@@ -13,7 +13,7 @@ const get = (req, res) => {
         else 
             res.status(404).send(`Channel ${encodeURIComponent(channel)} not found`);
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
@@ -23,10 +23,10 @@ const post = (actions, req, res) => {
         actions.joinChannel(channel).then(_ => {
             res.status(200).send(`Bot set to enabled for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
@@ -36,10 +36,10 @@ const remove = (actions, req, res) => {
         actions.leaveChannel(channel).then(_ => {
             res.status(200).send(`Bot set to disabled for channel ${encodeURIComponent(channel)}`);
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     }).catch(err => {
-        res.status(500).send(err.toString());
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 

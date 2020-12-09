@@ -39,23 +39,23 @@ const post = (actions, sessionPool, req, res) => {
                         DBService.updateTokensForChannel(user.data[0].id, r.access_token, r.refresh_token).then(_ => {
                             createSession();
                         }).catch(err => {
-                            res.status(500).send(err.toString());
+                            res.status(500).send(encodeURIComponent(err.toString()));
                         })
                     } else {
                         DBService.initChannel(user.data[0].id, user.data[0].login, r.access_token, r.refresh_token).then(_ => {
                             createSession();
                         }).catch(err => {
-                            res.status(500).send(err.toString());
+                            res.status(500).send(encodeURIComponent(err.toString()));
                         });
                     }
                 }).catch(err => {
-                    res.status(500).send(err.toString());
+                    res.status(500).send(encodeURIComponent(err.toString()));
                 });
             }).catch(err => {
-                res.status(500).send(err.toString());
+                res.status(500).send(encodeURIComponent(err.toString()));
             });
         }).catch(err => {
-            res.status(500).send(err.toString());
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
     } else
         res.status(400).send('Missing authentication code in request body');
