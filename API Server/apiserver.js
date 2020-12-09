@@ -37,7 +37,7 @@ module.exports = function(actions) {
         // manage the session pool
         // if the user has an active session, let the request through
         if (sessionPool[session]) {
-            if (sessionPool[session].channel !== channel) {
+            if (sessionPool[session].channel_id !== channel) {
                 res.status(401).send('Unauthorized request to private API');
             }
             return next();
