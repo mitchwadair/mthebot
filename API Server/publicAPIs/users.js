@@ -12,7 +12,7 @@ const get = (req, res) => {
             let responseObject = {
                 'schemaVersion': 1,
                 'label': 'users',
-                'message': count,
+                'message': count.toString(),
                 'color': 'blue'
             }
             res.json(responseObject);
