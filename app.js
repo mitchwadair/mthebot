@@ -5,7 +5,6 @@
 
 require('dotenv').config();
 const tmi = require('tmi.js');
-const mysql = require('mysql');
 const APIServer = require('./API Server/apiserver');
 const DBService = require('./dbservice');
 const twitchAPI = require('./External Data APIs/twitch');
