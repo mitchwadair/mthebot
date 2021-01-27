@@ -13,10 +13,7 @@ const contact = require('./publicAPIs/contact');
 const auth = require('./publicAPIs/auth');
 
 const DBService = require('../dbservice');
-
-const timedLog = message => {
-    console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
-}
+const {timedLog} = require('../utils');
 
 module.exports = function(actions) {
     const server = express();
