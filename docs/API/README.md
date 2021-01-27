@@ -3,18 +3,47 @@ Here you can find detailed API documentation for all of the public and private e
 
 # Contents
 - [Public](#public-endpoints)
+  - [Auth](#auth)
   - [Users](#users)
   - [Contact](#contact)
 - [Private](#private-endpoints)
-  - [Auth](#auth)
   - [Chats](#chats)
   - [Commands](#commands)
   - [Events](#events)
-  - [Init](#init)
   - [Timers](#timers)
   
 # Public Endpoints
 Public endpoints are accessible from any source, without authentication.
+
+## Auth
+Used to authenticate a user to MtheBot_. Also initializes new users if it is their first authentication.
+### POST /auth/{channelID}
+#### Request Parameters
+```json
+{
+  "code": "0123456789abcdefghijABCDEFGHIJ"
+}
+```
+**code** - *string* - the auth code returned from Twitch authentication
+#### Response
+*200 OK*  
+```json
+{
+  "user_data": {
+    "id": "44322889",
+    "login": "dallas",
+    "display_name": "dallas",
+    "type": "staff",
+    "broadcaster_type": "",
+    "description": "Just a gamer playing games and chatting. :)",
+    "profile_image_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/dallas-profile_image-1a2c906ee2c35f12-300x300.png",
+    "offline_image_url": "https://static-cdn.jtvnw.net/jtv_user_pictures/dallas-channel_offline_image-1a2c906ee2c35f12-1920x1080.png",
+    "view_count": 191836881,
+  },
+  "session_token": "0123456789abcdefghijABCDEFGHIJ"
+}
+```
+*500 Internal Server Error* 
 
 ## Users
 Retrieve the number of users being serviced by MtheBot_
@@ -61,22 +90,7 @@ contact sent sucessfully
 ```
 
 # Private Endpoints
-Private endpoints require the caller to be authenticated with Twitch
-
-## Auth
-Used to update auth tokens on user authentication with Twitch.  This is how API requests are verified.
-### POST /auth/{channelID}
-#### Request Parameters
-```json
-{
-  "token": "0123456789abcdefghijABCDEFGHIJ"
-}
-```
-**token** - *string* - the user access token returned from Twitch authentication
-#### Response
-*200 OK*  
-*400 Bad Request*  
-*500 Internal Server Error*  
+Private endpoints require the caller to be authenticated with Twitch 
 
 ## Chats
 Get or update the status of MtheBot_ for a given channel id
@@ -321,19 +335,6 @@ The server will respond with the updated event data, which should be the same as
 *404 Not Found*  
 ```
 Event name not found for channel channelID
-```
-
-## Init
-Initialize a new user in the database
-### POST /init/{channelID}
-#### Response
-*200 OK*  
-```
-Channel data created
-```
-*400 Bad Request*
-```
-Channel channelID already exists
 ```
 
 ## Timers

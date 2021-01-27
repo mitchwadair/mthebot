@@ -1,16 +1,16 @@
 {
   "name": "mthebot",
-  "version": "1.0.0",
+  "version": "2.0.1",
   "description": "Chatbot for Twitch",
   "main": "app.js",
   "dependencies": {
     "dotenv": "^8.2.0",
+    "express": "^4.17.1",
     "mysql": "^2.18.1",
     "nodemailer": "^6.4.6",
     "tmi.js": "^1.5.0",
     "ws": "^7.3.1"
   },
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

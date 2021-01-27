@@ -3,130 +3,126 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const http = require('http');
-const https = require('https');
-const url = require('url');
+const express = require('express');
 const users = require('./publicAPIs/users');
 const commands = require('./privateAPIs/commands');
 const timers = require('./privateAPIs/timers');
 const events = require('./privateAPIs/events');
 const chats = require('./privateAPIs/chats');
-const init = require('./privateAPIs/init');
 const contact = require('./publicAPIs/contact');
-const auth = require('./privateAPIs/auth');
+const auth = require('./publicAPIs/auth');
 
-const getArgsFromURL = require('./utils').getArgsFromURL;
+const DBService = require('../dbservice');
 
-module.exports = function(db, actions) {
-    // API routes
-    const apiRoutes = {
-        public: {
-            'users': users,
-            'contact': contact,
-        },
-        private: {
-            'commands': commands,
-            'timers': timers,
-            'events': events,
-            'chats': chats,
-            'init': init,
-            'auth': auth,
-        }
-    }
+const timedLog = message => {
+    console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
+}
+
+module.exports = function(actions) {
+    const server = express();
+    const port = process.env.PORT || 8080;
 
     let sessionPool = {};
 
-    // request handler
-    const apiRequestHandler = (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-        // prevent CORS issue
-        if (req.method === 'OPTIONS') {
-            res.writeHead(200);
-            res.end();
-            return;
+    // Authentication middleware for Express
+    const requireAuth = (req, res, next) => {
+        //let all requests through in dev mode
+        if (process.env.NODE_ENV === 'development') {
+            return next();
         }
-        const path = url.parse(req.url).pathname.split('/')[1];
-        const isPrivateRequest = Object.keys(apiRoutes.private).includes(path);
-        const handler = isPrivateRequest ? apiRoutes.private[path] : apiRoutes.public[path];
 
-        if (isPrivateRequest) {
-            //allow all requests in development
-            if (process.env.NODE_ENV === 'development') {
-                if (handler) {
-                    handler(db, actions, req, res);
-                } else {
-                    res.writeHead(404);
-                    res.end('Not Found');
-                }
-                return;
-            }
+        const session = req.headers.authorization.replace('Bearer ', '');
+        const channel = req.params.channel;
 
-            const channel = getArgsFromURL(req.url)[0];
-            if (sessionPool[channel]) {
-                clearTimeout(sessionPool[channel].timeout);
-                sessionPool[channel] = {
-                    timeout: setTimeout(_ => {
-                        clearTimeout(sessionPool[channel].timeout);
-                        delete sessionPool[channel];
-                    }, 300000),
-                }
-                if (handler) {
-                    handler(db, actions, req, res);
-                } else {
-                    res.writeHead(404);
-                    res.end('Not Found');
-                }
-            } else {
-                const headers = {
-                    'Authorization': req.headers.authorization,
-                    'Client-ID': process.env.CLIENT_ID,
-                }
-                https.get('https://id.twitch.tv/oauth2/validate', {headers: headers}, r => {
-                    let body = [];
-                    r.on('error', err => {
-                        res.writeHead(err.status);
-                        res.end(`ERROR: ${err}`);
-                    }).on('data', chunk => {
-                        body.push(chunk);
-                    }).on('end', _ => {
-                        body = JSON.parse(Buffer.concat(body).toString());
-                        if (body.expires_in < 3600) {
-                            res.writeHead(401);
-                            res.end('OAuth Token Expired');
-                        } else if (body.user_id !== channel) {
-                            res.writeHead(401);
-                            res.end('Unauthorized request to private API');
-                        } else {
-                            sessionPool[channel] = {
-                                timeout: setTimeout(_ => {
-                                    clearTimeout(sessionPool[channel].timeout);
-                                    delete sessionPool[channel];
-                                }, 300000),
-                            }
-                            if (handler) {
-                                handler(db, actions, req, res);
-                            } else {
-                                res.writeHead(404);
-                                res.end('Not Found');
-                            }
-                        }
-                    });
-                });
+        // manage the session pool
+        // if the user has an active session, let the request through
+        if (sessionPool[session]) {
+            if (sessionPool[session].channel_id !== channel) {
+                res.status(401).send('Unauthorized request to private API');
             }
+            return next();
         } else {
-            if (handler) {
-                handler(db, req, res);
+            if (req.headers.authorization) {
+                res.status(401).send('Session expired');
             } else {
-                res.writeHead(404);
-                res.end('Not Found');
+                res.status(401).send('Unauthorized request to private API');
             }
         }
     }
 
-    // basic http server
-    const server = http.createServer(apiRequestHandler);
-    server.listen(process.env.PORT || 8080, '0.0.0.0', _ => {});
+    // use express.json for body parsing
+    server.use(express.json());
+
+    server.use(function(req, res, next) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization");
+
+        if (req.method === 'OPTIONS') {
+            return res.status(200).send();
+        }
+
+        next();
+    });
+
+    // check if channel exists for all routes with channel param
+    server.param('channel', (req, res, next, id) => {
+        DBService.getChannel(id).then(channel => {
+            if (channel) {
+                return next();
+            } else {
+                res.status(404).send(`Channel ${encodeURIComponent(id)} not found`);
+            }
+        }).catch(err => {
+            res.status(500).send(encodeURIComponent(err.toString()));
+        });
+    });
+
+    // ==== PRIVATE APIS ====
+
+    // COMMANDS API Routes
+    server.route('/commands/:channel/:alias?')
+        .all(requireAuth)
+        .get(commands.get)
+        .post((req, res) => {commands.post(actions, req, res)})
+        .put((req, res) => {commands.put(actions, req, res)})
+        .delete((req, res) => {commands.remove(actions, req, res)});
+
+    // EVENTS API ROUTES
+    server.route('/events/:channel/:name?')
+        .all(requireAuth)
+        .get(events.get)
+        .put((req, res) => {events.put(actions, req, res)});
+
+    // TIMERS API ROUTES
+    server.route('/timers/:channel/:name?')
+        .all(requireAuth)
+        .get(timers.get)
+        .post((req, res) => {timers.post(actions, req, res)})
+        .put((req, res) => {timers.put(actions, req, res)})
+        .delete((req, res) => {timers.remove(actions, req, res)});
+
+    // CHATS API ROUTES
+    server.route('/chats/:channel')
+        .all(requireAuth)
+        .get(chats.get)
+        .post((req, res) => {chats.post(actions, req, res)})
+        .delete((req, res) => {chats.remove(actions, req, res)});    
+
+    // ==== PUBLIC APIS ====
+
+    // AUTH API ROUTES
+    server.route('/auth')
+        .post((req, res) => {auth.post(actions, sessionPool, req, res)});
+
+    // CONTACT API ROUTES
+    server.route('/contact')
+        .post(contact.post);
+
+    // USERS API ROUTES
+    server.route('/users')
+        .get(users.get);
+
+    server.listen(port, _ => {timedLog(`** API Server listening on port ${port}`)});
+    return server;
 }

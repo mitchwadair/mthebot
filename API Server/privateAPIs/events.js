@@ -3,115 +3,56 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const {getArgsFromURL, channelExistsInDB, validateData} = require('../utils');
+const {validateData} = require('../../utils');
+const DBService = require('../../dbservice');
 
 const schema = {
     enabled: 'boolean',
     message: 'string'
 }
 
-const get = (db, req, res) => {
-    const args = getArgsFromURL(req.url);
-    const channel = args[0];
-    const evt = args[1];
-    channelExistsInDB(db, channel).then(_ => {
-        if (evt) {
-            db.query(`SELECT * FROM events WHERE channel_id=? and name=?`, [channel, evt], (err, results) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end(err.toString());
-                    return;
-                } else if (!results.length) {
-                    res.writeHead(404);
-                    res.end(`Event ${evt} not found for channel ${channel}`);
-                    return;
-                }
-                const responseBody = {
-                    name: results[0].name,
-                    message: results[0].message,
-                    enabled: results[0].enabled ? true : false,
-                }
-                res.writeHead(200);
-                res.end(JSON.stringify(responseBody));
-            });
-        } else {
-            db.query(`SELECT * FROM events WHERE channel_id=?`, [channel], (err, results) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end(err.toString());
-                    return;
-                }
-                const responseBody = results.map(c => {
-                    return {
-                        name: c.name,
-                        message: c.message,
-                        enabled: c.enabled ? true : false
-                    }
-                });
-                res.writeHead(200);
-                res.end(JSON.stringify(responseBody));
-            });
-        }
-        
-    }).catch(err => {
-        res.writeHead(404);
-        res.end(`Channel ${channel} not found`);
-    });
-}
-
-const put = (db, actions, req, res) => {
-    const args = getArgsFromURL(req.url);
-    const channel = args[0];
-    const evt = args[1];
-    let body = [];
-    channelExistsInDB(db, channel).then(_ => {
-        req.on('error', err => {
-            res.writeHead(500);
-            res.end(err.toString());
-        }).on('data', chunk => {
-            body.push(chunk);
-        }).on('end', _ => {
-            body = JSON.parse(Buffer.concat(body).toString());
-            let validated = validateData(schema, body);
-            if (validated !== true) {
-                res.writeHead(400);
-                res.end(JSON.stringify(validated));
-                return;
-            }
-            db.query(
-            `UPDATE events SET name=?, message=?, enabled=? where channel_id=? and name=?`,
-            [evt, body.message, body.enabled, channel, evt],
-            (err, results) => {
-                if (err) {
-                    res.writeHead(500);
-                    res.end(err.toString());
-                    return;
-                }else if (!results.affectedRows) { 
-                    res.writeHead(404);
-                    res.end(`Event ${evt} not found for channel ${channel}`);
-                    return;
-                }
-                actions.refreshChannelData(channel);
-                res.writeHead(200);
-                res.end(JSON.stringify(body));
-            });
+const get = (req, res) => {
+    const channel = req.params.channel;
+    const evt = req.params.name;
+    if (evt) {
+        DBService.getEventForChannel(evt, channel).then(data => {
+            if (data)
+                res.status(200).json(data);
+            else
+                res.status(404).send(`Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`);
+        }).catch(err => {
+            res.status(500).send(encodeURIComponent(err.toString()));
         });
+    } else {
+        DBService.getAllEventsForChannel(channel).then(data => {
+            res.status(200).json(data);
+        }).catch(err => {
+            res.status(500).send(encodeURIComponent(err.toString()));
+        });
+    }
+}
+
+const put = (actions, req, res) => {
+    const channel = req.params.channel;
+    const evt = req.params.name;
+    let body = req.body;
+    let validated = validateData(schema, body);
+    if (validated !== true) {
+        res.status(400).json(validated);
+        return;
+    }
+    DBService.updateEventForChannel(evt, body, channel).then(data => {
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).json(data);
+        } else
+            res.status(404).send(`Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`);
     }).catch(err => {
-        res.writeHead(404);
-        res.end(`Channel ${channel} not found`);
+        res.status(500).send(encodeURIComponent(err.toString()));
     });
 }
 
-module.exports = (db, actions, req, res) => {
-    switch (req.method) {
-        case 'GET':
-            get(db, req, res);
-            break;
-        case 'PUT':
-            put(db, actions, req, res);
-            break;
-        default:
-            res.writeHead(400);
-            res.end('Bad Request');
-    }
+module.exports = {
+    get,
+    put
 }
