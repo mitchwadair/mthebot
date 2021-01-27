@@ -5,6 +5,15 @@
 
 const https = require('https');
 
+const USER_TYPES = {
+    user: 0,
+    vip: 1,
+    subscriber: 2,
+    moderator: 3,
+    global_mod: 3,
+    broadcaster: 3,
+}
+
 module.exports = {
     validateData: (schema, data) => {
         const diffKeys = (exp, act) => {
@@ -53,6 +62,27 @@ module.exports = {
                 reject(err);
             }).end();
         });
+    },
+    getLengthDataFromMillis: ms => {
+        const date = new Date(ms);
+        return {
+            years: date.getUTCFullYear() - 1970,
+            months: date.getUTCMonth(),
+            days: date.getUTCDate() - 1,
+            hours: date.getUTCHours(),
+            minutes: date.getUTCMinutes(),
+            seconds: date.getUTCSeconds(),
+        }
+    },
+    getUserLevel: userstate => {
+        return userstate['badges-raw'] ? userstate['badges-raw'].split(',').map(badge => {
+            return badge.split('/')[0];
+        }).reduce((total, badge) => {
+            if (USER_TYPES[badge] && USER_TYPES[badge] > total) {
+                return USER_TYPES[badge];
+            }
+            return total;
+        }, USER_TYPES.user) : 0;
     },
     timedLog: message => {
         console.log(`${new Date(Date.now()).toUTCString()} ${message}`);

@@ -8,7 +8,7 @@ const tmi = require('tmi.js');
 const APIServer = require('./API Server/apiserver');
 const DBService = require('./dbservice');
 const twitchAPI = require('./External Data APIs/twitch');
-const {timedLog} = require('./utils');
+const {timedLog, getLengthDataFromMillis, getUserLevel} = require('./utils');
 
 // ===================== HELPER FUNCTIONS =====================
 
@@ -25,30 +25,9 @@ Array.prototype.chunk = function(maxChunkSize) {
     return chunks;
 }
 
-const getLengthDataFromMillis = ms => {
-    const date = new Date(ms);
-    return {
-        years: date.getUTCFullYear() - 1970,
-        months: date.getUTCMonth(),
-        days: date.getUTCDate() - 1,
-        hours: date.getUTCHours(),
-        minutes: date.getUTCMinutes(),
-        seconds: date.getUTCSeconds(),
-    }
-}
-
 // ===================== DATA =====================
 
 let channels = {};
-
-const USER_TYPES = {
-    user: 0,
-    vip: 1,
-    subscriber: 2,
-    moderator: 3,
-    global_mod: 3,
-    broadcaster: 3,
-}
 
 const DATA_TAGS = [
     {
@@ -270,17 +249,6 @@ const processChannel = channelKey => {
             })
         }
     });
-}
-
-const getUserLevel = (userstate) => {
-    return userstate['badges-raw'] ? userstate['badges-raw'].split(',').map(badge => {
-        return badge.split('/')[0];
-    }).reduce((total, badge) => {
-        if (USER_TYPES[badge] && USER_TYPES[badge] > total) {
-            return USER_TYPES[badge];
-        }
-        return total;
-    }, USER_TYPES.user) : 0;
 }
 
 // ===================== EVENT HANDLERS =====================
