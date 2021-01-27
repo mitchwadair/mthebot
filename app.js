@@ -7,8 +7,10 @@ require('dotenv').config();
 const tmi = require('tmi.js');
 const APIServer = require('./API Server/apiserver');
 const DBService = require('./dbservice');
+const ChannelManager = require('./ChannelManager/channelManager');
 const twitchAPI = require('./External Data APIs/twitch');
 const {timedLog, getLengthDataFromMillis, getUserLevel} = require('./utils');
+const TimerEmitter = require('./timerEmitter');
 
 // ===================== HELPER FUNCTIONS =====================
 
@@ -27,14 +29,12 @@ Array.prototype.chunk = function(maxChunkSize) {
 
 // ===================== DATA =====================
 
-let channels = {};
-
 const DATA_TAGS = [
     {
         tag: '{{followage}}',
         dataFetch: (channel, userstate) => {
             return new Promise((resolve, reject) => {
-                twitchAPI.getFollowData(userstate['user-id'], channels[channel].id).then(data => {
+                twitchAPI.getFollowData(userstate['user-id'], ChannelManager.getChannel(channel).getId()).then(data => {
                     if (data) {
                         const length = getLengthDataFromMillis(Date.now() - Date.parse(data.followed_at));
                         const val = `
@@ -56,7 +56,7 @@ const DATA_TAGS = [
         tag: '{{followcount}}',
         dataFetch: (channel, userstate) => {
             return new Promise((resolve, reject) => {
-                twitchAPI.getFollowCount(channels[channel].id).then(data => {
+                twitchAPI.getFollowCount(ChannelManager.getChannel(channel).getId()).then(data => {
                     resolve({tag: '{{followcount}}', value: data});
                 }).catch(err => {
                     reject({tag: '{{followcount}}', reason: 'error fetching followcount data'});
@@ -68,7 +68,7 @@ const DATA_TAGS = [
         tag: '{{subcount}}',
         dataFetch: (channel, userstate) => {
             return new Promise((resolve, reject) => {
-                twitchAPI.getSubCount(channels[channel].id).then(data => {
+                twitchAPI.getSubCount(ChannelManager.getChannel(channel).getId()).then(data => {
                     resolve({tag: '{{subcount}}', value: data});
                 }).catch(err => {
                     reject({tag: '{{subcount}}', reason: 'error fetching subcount data'});
@@ -122,135 +122,6 @@ const DATA_TAGS = [
     
 ]
 
-// ===================== DATA FUNCTIONS =====================
-
-// remove a channel from the active channels object
-const deleteChannel = channel => {
-    // clear intervals for timed messages
-    if (channels[channel]) {
-        channels[channel].timers.forEach(timer => {
-            clearInterval(timer.interval);
-        });
-        delete channels[channel];
-        timedLog(`** BOT: Removed channel ${channel} from active channels`);
-    }
-}
-
-// get channel data from DB
-const fetchChannelData = channelKey => {
-    return new Promise((resolve, reject) => {
-        twitchAPI.getUser(channelKey).then(data => {
-            DBService.getChannel(data.id).then(channel => {
-                if (channel.name !== channelKey) {
-                    DBService.updateNameForChannel(channelKey, data.id).then(_ => {
-                        timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
-                    }).catch(err => {
-                        timedLog(`** error updating name for id ${data.id}: ${err}`);
-                    });
-                }
-
-                let commands = [];
-                let events = {};
-                let timers = [];
-                let promises = []
-
-                promises.push(new Promise((resolve, reject) => {
-                    DBService.getAllCommandsForChannel(data.id).then(cmds => {
-                        commands = cmds.map(c => {
-                            return {
-                                alias: c.alias,
-                                message: c.message,
-                                cooldown: c.cooldown,
-                                user_level: c.user_level,
-                            }
-                        });
-                        resolve();
-                    }).catch(err => {
-                        reject(err);
-                    });
-                }));
-                promises.push(new Promise((resolve, reject) => {
-                    DBService.getAllEventsForChannel(data.id).then(evts => {
-                        evts.forEach(e => {
-                            events[e.name] = {
-                                message: e.message,
-                                enabled: e.enabled
-                            }
-                        });
-                        resolve();
-                    }).catch(err => {
-                        reject(err);
-                    });
-                }));
-                promises.push(new Promise((resolve, reject) => {
-                    DBService.getAllTimersForChannel(data.id).then(tmrs => {
-                        timers = tmrs.map(t => {
-                            return {
-                                name: t.name,
-                                message: t.message,
-                                enabled: t.enabled,
-                                interval: t.interval,
-                                message_threshold: t.message_threshold
-                            }
-                        });
-                        resolve();
-                    }).catch(err => {
-                        reject(err);
-                    });
-                }));
-
-                Promise.all(promises).then(_ => {
-                    channels[channelKey] = {
-                        commands: commands,
-                        events: events,
-                        timeout: setTimeout(_ => {deleteChannel(channelKey)}, 300000),
-                        timers: timers.map((timer, i) => {
-                            if (timer.enabled) {
-                                return {
-                                    interval: setInterval(_ => {
-                                        if (channels[channelKey].timers[i].messageCount >= timer.message_threshold) {
-                                            channels[channelKey].timers[i].messageCount = 0;
-                                            client.say(`#${channelKey}`, timer.message);
-                                        }
-                                    }, timer.interval*1000),
-                                    messageCount: 0,
-                                }
-                            }
-                        }),
-                        id: data.id,
-                    }
-                    timedLog(`** fetched data for channel ${channelKey}`);
-                    resolve();
-                });
-            }).catch(err => {
-                reject(err);
-            });
-        }).catch(err => {
-            timedLog(`** BOT: Error getting user data for channel ${channelKey}`)
-            reject(err);
-        });
-    });
-}
-
-// process the given channel
-// either restart the timeout func or add the channel to active channels
-const processChannel = channelKey => {
-    return new Promise((resolve, reject) => {
-        if (channels[channelKey] !== undefined) {
-            clearTimeout(channels[channelKey].timeout);
-            channels[channelKey].timeout = setTimeout(_ => {deleteChannel(channelKey)}, 300000);
-            resolve();
-        } else {
-            fetchChannelData(channelKey).then(_ => {
-                timedLog(`** BOT: Added channel ${channelKey} to active channels`);
-                resolve();
-            }).catch(err => {
-                reject(err);
-            })
-        }
-    });
-}
-
 // ===================== EVENT HANDLERS =====================
 
 const onConnected = (address, port) => {
@@ -288,26 +159,23 @@ const onChat = (channel, userstate, message, self) => {
     if (self) return;
 
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        channels[channelKey].timers.forEach(timer => {
-            timer.messageCount++
-        });
+    ChannelManager.processChannel(channelKey).then(_ => {
+        ChannelManager.getChannel(channelKey).incrementTimers();
         const full = message.trim();
 
         if (full.startsWith('!')) {
             const userLevel = getUserLevel(userstate);
             const args = full.split(' ');
             const alias = args.shift().substring(1);
-            const command = channels[channelKey].commands.find(cmd => {
-                return cmd.alias === alias;
-            });
+            const command = ChannelManager.getChannel(channelKey).getCommand(alias);
+            
             if (command && !command.isOnCooldown && userLevel >= command.user_level) {
                 command.isOnCooldown = true;
                 setTimeout(_ => {command.isOnCooldown = false}, command.cooldown * 1000);
                 let message = command.message
                     .replace(new RegExp('{{sender}}', 'g'), userstate['display-name'])
                     .replace(new RegExp('{{channel}}', 'g'), channelKey)
-                    .replace(new RegExp('{{commands}}', 'g'), channels[channelKey].commands.filter(c => c.user_level === 0).map(c => `!${c.alias}`).join(', '));
+                    .replace(new RegExp('{{commands}}', 'g'), ChannelManager.getChannel(channelKey).getCommands().filter(c => c.user_level === 0).map(c => `!${c.alias}`).join(', '));
                 let messagePromises = [];
                 DATA_TAGS.forEach(dt => {
                     if (message.includes(dt.tag)) {
@@ -334,8 +202,8 @@ const onChat = (channel, userstate, message, self) => {
 const onHost = (channel, username, viewers, autohost) => {
     if (!autohost) {
         const channelKey = channel.substring(1);
-        processChannel(channelKey).then(_ => {
-            const data = channels[channelKey].events.host;
+        ChannelManager.processChannel(channelKey).then(_ => {
+            const data = ChannelManager.getChannel(channelKey).getEvents().host;
             if (data.enabled) {
                 let message = data.message
                     .replace(new RegExp('{{user}}', 'g'), username)
@@ -350,8 +218,8 @@ const onHost = (channel, username, viewers, autohost) => {
 
 const onRaid = (channel, username, viewers) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.raid;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().raid;
         if (data.enabled) {
             let message = data.message
                 .replace(new RegExp('{{user}}', 'g'), username)
@@ -365,8 +233,8 @@ const onRaid = (channel, username, viewers) => {
 
 const onResub = (channel, username, monthStreak, message, userstate, methods) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.resub;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().resub;
         if (data.enabled) {
             const months = ~~userstate["msg-param-cumulative-months"];
             let message = data.message
@@ -383,8 +251,8 @@ const onResub = (channel, username, monthStreak, message, userstate, methods) =>
 
 const onSubGift = (channel, username, monthStreak, recipient, methods, userstate) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.subgift;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().subgift;
         if (data.enabled) {
             const total = ~~userstate["msg-param-sender-count"];
             let message = data.message
@@ -402,8 +270,8 @@ const onSubGift = (channel, username, monthStreak, recipient, methods, userstate
 
 const onSubMysteryGift = (channel, username, numbOfSubs, methods, userstate) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.mysterygift;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().mysterygift;
         if (data.enabled) {
             const total = ~~userstate["msg-param-sender-count"];
             let message = data.message
@@ -420,8 +288,8 @@ const onSubMysteryGift = (channel, username, numbOfSubs, methods, userstate) => 
 
 const onSub = (channel, username, methods, message, userstate) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.sub;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().sub;
         if (data.enabled) {
             let message = data.message
                 .replace(new RegExp('{{user}}', 'g'), username)
@@ -435,8 +303,8 @@ const onSub = (channel, username, methods, message, userstate) => {
 
 const onAnonGiftUpgrade = (channel, username, userstate) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.anongiftupgrade;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().anongiftupgrade;
         if (data.enabled) {
             let message = data.message
                 .replace(new RegExp('{{user}}', 'g'), username);
@@ -449,8 +317,8 @@ const onAnonGiftUpgrade = (channel, username, userstate) => {
 
 const onGiftUpgrade = (channel, username, sender, userstate) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.giftupgrade;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().giftupgrade;
         if (data.enabled) {
             let message = data.message
                 .replace(new RegExp('{{user}}', 'g'), username)
@@ -464,8 +332,8 @@ const onGiftUpgrade = (channel, username, sender, userstate) => {
 
 const onCheer = (channel, userstate, message) => {
     const channelKey = channel.substring(1);
-    processChannel(channelKey).then(_ => {
-        const data = channels[channelKey].events.cheer;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().cheer;
         if (data.enabled) {
             let message = data.message
                 .replace(new RegExp('{{user}}', 'g'), username)
@@ -509,33 +377,34 @@ client.on('anonpaidgiftupgrade', onAnonGiftUpgrade);
 client.on('cheer', onCheer);
 
 client.connect();
+new TimerEmitter(client);
 
 // ===================== INIT API SERVER =====================
 
 const actions = {
     refreshChannelData: channelID => {
         DBService.getChannel(channelID).then(channel => {
-            if (channels[channel.name] !== undefined) {
-                timedLog(`** refreshing data for channel ${channel}...`);
-                deleteChannel(channel.name);
-                fetchChannelData(channel.name).then(_ => {
-                    timedLog(`** refreshed channel ${channelID}`);
+            if (ChannelManager.getChannel(channel.name) !== undefined) {
+                timedLog(`** refreshing data for channel ${channel.name}...`);
+                ChannelManager.deleteChannel(channel.name);
+                ChannelManager.fetchChannelData(channel.name).then(_ => {
+                    timedLog(`** refreshed channel ${channel.name}`);
                 }).catch(err => {
-                    timedLog(`** ERROR refreshing channel ${channelID}: ${err}`);
-                })
+                    timedLog(`** ERROR refreshing channel ${channel.name}: ${err}`);
+                });
             }
         }).catch(err => {
-            timedLog(`** ERROR refreshing channel ${channelID}: ${err}`);
+            timedLog(`** ERROR refreshing channel ${channel.name}: ${err}`);
         });
     },
     joinChannel: channel => {
-        return twitchAPI.getBatchUsersByID([channel]).then(data => {
-            return data[0] ? client.join(data[0].name) : true;
+        return twitchAPI.getUser(channel).then(data => {
+            return data ? client.join(data.name) : true;
         });
     },
     leaveChannel: channel => {
-        return twitchAPI.getBatchUsersByID([channel]).then(data => {
-            return data[0] ? client.part(data[0].name) : true;
+        return twitchAPI.getUser(channel).then(data => {
+            return data ? client.part(data.name) : true;
         });
     }
 }
