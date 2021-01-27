@@ -251,7 +251,7 @@ const onCheer = (channel, userstate, message) => {
     });
 }
 
-// ===================== INIT CHAT BOT/DB/PUBSUB =====================
+// ===================== INIT CHAT BOT =====================
 
 const opts = {
     identity: {
