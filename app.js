@@ -5,6 +5,7 @@
 
 require('dotenv').config();
 const tmi = require('tmi.js');
+const TES = require('tesjs');
 const APIServer = require('./API Server/apiserver');
 const DBService = require('./dbservice');
 const ChannelManager = require('./ChannelManager/channelManager');
@@ -251,6 +252,25 @@ const onCheer = (channel, userstate, message) => {
     });
 }
 
+const onFollow = event => {
+    const channelKey = event.broadcaster_user_login;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().follow;
+        if (data.enabled) {
+            let message = data.message
+                .replace(new RegExp('{{userid}}', 'g'), event.user_id)
+                .replace(new RegExp('{{userlogin}}', 'g'), event.user_login)
+                .replace(new RegExp('{{username}}', 'g'), event.user_name)
+                .replace(new RegExp('{{broadcasterid}}', 'g'), event.broadcaster_user_id)
+                .replace(new RegExp('{{broadcasterlogin}}', 'g'), event.broadcaster_user_login)
+                .replace(new RegExp('{{broadcastername}}', 'g'), event.broadcaster_user_name);
+            client.sat(message);
+        }
+    }).catch(err => {
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
+    });
+}
+
 // ===================== INIT CHAT BOT =====================
 
 const opts = {
@@ -312,7 +332,38 @@ const actions = {
         return twitchAPI.getUser(channel).then(data => {
             return data ? client.part(data.name) : true;
         });
+    },
+    subscribeFollow: channel => {
+        const condition = {broadcaster_user_id: channel};
+        tes.subscribe('channel.follow', condition)
+            .catch(e => {
+                timedLog(`** ERROR subscribing to follow event for channel ${channel}: ${e}`);
+            });
+    },
+    unsubscribeFollow: channel => {
+        const condition = {broadcaster_user_id: channel};
+        tes.unsubscribe('channel.follow', condition)
+            .catch(e => {
+                timedLog(`** ERROR unsubscribing from follow event for channel ${channel}: ${e}`);
+            });
     }
 }
 
-APIServer(actions);
+const server = APIServer(actions);
+
+// ===================== INIT TES =====================
+
+const tesConfig = {
+    identity: {
+        id: process.env.CLIENT_ID,
+        secret: process.env.CLIENT_SECRET
+    },
+    listener: {
+        baseURL: '',
+        server: server
+    }
+}
+
+const tes = new TES(tesConfig);
+
+tes.on('channel.follow', onFollow);

@@ -41,15 +41,27 @@ const put = (actions, req, res) => {
         res.status(400).json(validated);
         return;
     }
-    DBService.updateEventForChannel(evt, body, channel).then(data => {
-        if (data) {
-            actions.refreshChannelData(channel);
-            res.status(200).json(data);
-        } else
-            res.status(404).send(`Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`);
-    }).catch(err => {
-        res.status(500).send(encodeURIComponent(err.toString()));
-    });
+    const updateEvent = _ => {
+        DBService.updateEventForChannel(evt, body, channel).then(data => {
+            if (data) {
+                actions.refreshChannelData(channel);
+                res.status(200).json(data);
+            } else
+                res.status(404).send(`Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`);
+        }).catch(err => {
+            res.status(500).send(encodeURIComponent(err.toString()));
+        });
+    }
+
+    if (evt === 'follow') {
+        DBService.getEventForChannel(evt, channel).then(data => {
+            if (data.enabled !== body.enabled) {
+                body.enabled ? actions.subscribeFollow(channel) : actions.unsubscribeFollow(channel);
+            }
+            updateEvent();
+        });
+    } else
+        updateEvent();
 }
 
 module.exports = {
