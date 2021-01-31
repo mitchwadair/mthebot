@@ -5,6 +5,7 @@
 
 require('dotenv').config();
 const tmi = require('tmi.js');
+const TES = require('tesjs');
 const APIServer = require('./API Server/apiserver');
 const DBService = require('./dbservice');
 const ChannelManager = require('./ChannelManager/channelManager');
@@ -251,6 +252,20 @@ const onCheer = (channel, userstate, message) => {
     });
 }
 
+const onFollow = event => {
+    const channelKey = event.broadcaster_user_login;
+    ChannelManager.processChannel(channelKey).then(_ => {
+        const data = ChannelManager.getChannel(channelKey).getEvents().follow;
+        if (data.enabled) {
+            let message = data.message
+                .replace(new RegExp('{{user}}', 'g'), event.user_name);
+            client.say(`#${channelKey}`, message);
+        }
+    }).catch(err => {
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
+    });
+}
+
 // ===================== INIT CHAT BOT =====================
 
 const opts = {
@@ -312,7 +327,50 @@ const actions = {
         return twitchAPI.getUser(channel).then(data => {
             return data ? client.part(data.name) : true;
         });
+    },
+    subscribeFollow: channel => {
+        return new Promise((resolve, reject) => {
+            const condition = {broadcaster_user_id: channel};
+            tes.subscribe('channel.follow', condition)
+                .then(_ => {
+                    resolve()
+                })
+                .catch(e => {
+                    timedLog(`** ERROR subscribing to follow event for channel ${channel}: ${e}`);
+                    reject();
+                });
+        });
+    },
+    unsubscribeFollow: channel => {
+        return new Promise((resolve, reject) => {
+            const condition = {broadcaster_user_id: channel};
+            tes.unsubscribe('channel.follow', condition)
+                .then(_ => {
+                    resolve()
+                })
+                .catch(e => {
+                    timedLog(`** ERROR unsubscribing from follow event for channel ${channel}: ${e}`);
+                    reject();
+                });
+        });
     }
 }
 
-APIServer(actions);
+const server = APIServer(actions);
+
+// ===================== INIT TES =====================
+
+const tesConfig = {
+    identity: {
+        id: process.env.CLIENT_ID,
+        secret: process.env.CLIENT_SECRET
+    },
+    listener: {
+        baseURL: 'https://api.bot.mtheb.tv',
+        server: server
+    }
+}
+
+const tes = new TES(tesConfig);
+
+tes.on('channel.follow', onFollow);
