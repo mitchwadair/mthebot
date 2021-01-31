@@ -40,19 +40,19 @@ MtheBot_ is currently a one-man operation.  Because of this, I incur numerous mo
 ## The Bot Itself
 <p align="center">
     <a href="https://tmijs.com/">
-        <img src="https://avatars0.githubusercontent.com/u/17866914?s=200&v=4" height="100px" alt="tmi Logo"/>
+        <img src="https://avatars0.githubusercontent.com/u/17866914?s=200&v=4" height="75px" alt="tmi Logo"/>
     </a>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://tesjs.net/">
-        <img src="https://github.com/mitchwadair/tesjs/raw/main/assets/tesjs_logo_stroke.png?raw=true" height="100px" alt="TES Logo"/>
+        <img src="https://github.com/mitchwadair/tesjs/raw/main/assets/tesjs_logo_stroke.png?raw=true" height="75px" alt="TES Logo"/>
     </a>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://www.mysql.com/">
-        <img src="https://www.mysql.com/common/logos/powered-by-mysql-167x86.png" height="100px" alt="MySQL Logo"/>
+        <img src="https://www.mysql.com/common/logos/powered-by-mysql-167x86.png" height="75px" alt="MySQL Logo"/>
     </a>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
     <a href="https://expressjs.com/">
-        <img src="https://expressjs.com/images/express-facebook-share.png" height="100px" alt="Express Logo"/>
+        <img src="https://expressjs.com/images/express-facebook-share.png" height="75px" alt="Express Logo"/>
     </a>
 </p>
 
