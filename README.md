@@ -15,7 +15,7 @@
 # Contents
 - [What is MtheBot_?](#what-is-mthebot_)
 - [How Can I Support MtheBot_?](#how-can-i-support-mthebot_)
-- [MtheBot_'s Tech Stack](#mthebot_s-tech-stack)s
+- [MtheBot_'s Tech Stack](#mthebot_s-tech-stack)
 - [Contribute](#contribute)
 
 # What is MtheBot_?
