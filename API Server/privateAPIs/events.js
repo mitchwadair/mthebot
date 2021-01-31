@@ -56,9 +56,12 @@ const put = (actions, req, res) => {
     if (evt === 'follow') {
         DBService.getEventForChannel(evt, channel).then(data => {
             if (data.enabled !== body.enabled) {
-                body.enabled ? actions.subscribeFollow(channel) : actions.unsubscribeFollow(channel);
-            }
-            updateEvent();
+                const act = body.enabled ? actions.subscribeFollow(channel) : actions.unsubscribeFollow(channel);
+                act.then(_ => {
+                    updateEvent();
+                });
+            } else
+                updateEvent();
         });
     } else
         updateEvent();

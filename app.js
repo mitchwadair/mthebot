@@ -329,18 +329,30 @@ const actions = {
         });
     },
     subscribeFollow: channel => {
-        const condition = {broadcaster_user_id: channel};
-        tes.subscribe('channel.follow', condition)
-            .catch(e => {
-                timedLog(`** ERROR subscribing to follow event for channel ${channel}: ${e}`);
-            });
+        return new Promise((resolve, reject) => {
+            const condition = {broadcaster_user_id: channel};
+            tes.subscribe('channel.follow', condition)
+                .then(_ => {
+                    resolve()
+                })
+                .catch(e => {
+                    timedLog(`** ERROR subscribing to follow event for channel ${channel}: ${e}`);
+                    reject();
+                });
+        });
     },
     unsubscribeFollow: channel => {
-        const condition = {broadcaster_user_id: channel};
-        tes.unsubscribe('channel.follow', condition)
-            .catch(e => {
-                timedLog(`** ERROR unsubscribing from follow event for channel ${channel}: ${e}`);
-            });
+        return new Promise((resolve, reject) => {
+            const condition = {broadcaster_user_id: channel};
+            tes.unsubscribe('channel.follow', condition)
+                .then(_ => {
+                    resolve()
+                })
+                .catch(e => {
+                    timedLog(`** ERROR unsubscribing from follow event for channel ${channel}: ${e}`);
+                    reject();
+                });
+        });
     }
 }
 
