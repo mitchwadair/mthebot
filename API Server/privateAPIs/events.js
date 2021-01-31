@@ -59,6 +59,8 @@ const put = (actions, req, res) => {
                 const act = body.enabled ? actions.subscribeFollow(channel) : actions.unsubscribeFollow(channel);
                 act.then(_ => {
                     updateEvent();
+                }).catch(err => {
+                    res.status(500).send(encodeURIComponent(err.toString()));
                 });
             } else
                 updateEvent();
