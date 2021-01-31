@@ -349,13 +349,12 @@ const server = APIServer(actions);
 // ===================== INIT TES =====================
 
 const tesConfig = {
-    options: {debug: true},
     identity: {
         id: process.env.CLIENT_ID,
         secret: process.env.CLIENT_SECRET
     },
     listener: {
-        baseURL: 'https://1d403f364f16.ngrok.io',
+        baseURL: 'https://api.bot.mtheb.tv',
         server: server
     }
 }
