@@ -258,13 +258,8 @@ const onFollow = event => {
         const data = ChannelManager.getChannel(channelKey).getEvents().follow;
         if (data.enabled) {
             let message = data.message
-                .replace(new RegExp('{{userid}}', 'g'), event.user_id)
-                .replace(new RegExp('{{userlogin}}', 'g'), event.user_login)
-                .replace(new RegExp('{{username}}', 'g'), event.user_name)
-                .replace(new RegExp('{{broadcasterid}}', 'g'), event.broadcaster_user_id)
-                .replace(new RegExp('{{broadcasterlogin}}', 'g'), event.broadcaster_user_login)
-                .replace(new RegExp('{{broadcastername}}', 'g'), event.broadcaster_user_name);
-            client.sat(message);
+                .replace(new RegExp('{{user}}', 'g'), event.user_name);
+            client.say(`#${channelKey}`, message);
         }
     }).catch(err => {
         timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
@@ -354,12 +349,13 @@ const server = APIServer(actions);
 // ===================== INIT TES =====================
 
 const tesConfig = {
+    options: {debug: true},
     identity: {
         id: process.env.CLIENT_ID,
         secret: process.env.CLIENT_SECRET
     },
     listener: {
-        baseURL: '',
+        baseURL: 'https://1d403f364f16.ngrok.io',
         server: server
     }
 }

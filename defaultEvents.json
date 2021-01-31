@@ -1,4 +1,8 @@
 {
+    "follow": {
+        "enabled": true,
+        "message": "{{username}} followed!"
+    },
     "sub": {
         "enabled": true,
         "message": "{{user}} just subbed with a {{type}} sub!"
