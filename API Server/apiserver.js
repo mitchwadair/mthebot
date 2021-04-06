@@ -46,17 +46,8 @@ module.exports = function(actions) {
             }
         }
     }
-
-    // use express.json for body parsing
-    const unless = (path, middleware) => {
-        return (req, res, next) => {
-            if (path === req.path)
-                return next();
-            else
-                return middleware(req, res, next);
-        }
-    }
-    server.use(unless('/teswh/event', express.json()));
+    
+    server.use(express.json());
 
     server.use(function(req, res, next) {
         res.header("Access-Control-Allow-Origin", "*");
