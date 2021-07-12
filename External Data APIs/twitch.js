@@ -144,20 +144,11 @@ module.exports = {
     getSubCount: channelID => {
         return new Promise((resolve, reject) => {
             getTokenForChannel(channelID).then(token => {
-                let total = 0;
-                const getCountForPage = (page, callback) => {
-                    httpsRequest(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}${page ? `&after=${page}` : ''}`, {headers: createHeaderObject(token), method: 'GET'}).then(data => {
-                        total += data.data.length;
-                        if (data.data.length < 100) {
-                            callback();
-                        } else {
-                            getCountForPage(data.pagination.cursor, callback);
-                        }
-                    }).catch(err => {
-                        reject(err);
-                    });
-                }
-                getCountForPage(null, _ => {resolve(total - 1)}); //subtract 1 because it counts broadcaster as 1
+                httpsRequest(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}`, {headers: createHeaderObject(token), method: 'GET'}).then(data => {
+                    resolve(data.total);
+                }).catch(err => {
+                    reject(err);
+                });
             }).catch(err => {
                 reject(err);
             });
