@@ -25,7 +25,7 @@ MtheBot_ is an open-source project by [Mitchell Adair](https://github.com/mitchw
 MtheBot_ is currently a one-man operation.  Because of this, I incur numerous monthly costs associated with keeping the bot running, which I currently pay out of pocket.  These costs include domain registration and maintenance, server architechture, and more.  If you would like to help keep MtheBot_ running, you could consider supporting the project on [GitHub Sponsors](https://github.com/sponsors/mitchwadair) or giving a one-time donation through [PayPal](https://paypal.me/mitchwadair). Anything is appreciated and will directly help the efforts being made not only to maintain MtheBot_, but also to allow me to dedicate more time to improving the bot and it's features.
 
 <p align="center">
-    <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=9WS3KJPAV8JDJ&currency_code=USD">
+    <a href="https://paypal.me/mitchwadair">
         <img src="https://www.paypalobjects.com/webstatic/mktg/logo/pp_cc_mark_111x69.jpg" height="75px" alt="PayPal Logo">
     </a>
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
