@@ -13,7 +13,7 @@ const twitchAPI = require('./External Data APIs/twitch');
 const {timedLog, getUserLevel} = require('./utils');
 const TimerEmitter = require('./timerEmitter');
 const DATA_TAGS = require('./DataTags/datatags');
-
+const tesConfig = require('./config/tesConfig');
 // ===================== HELPER FUNCTIONS =====================
 
 // extend Array to include a 'chunk' function
@@ -366,7 +366,7 @@ const tesConfig = {
         secret: process.env.CLIENT_SECRET
     },
     listener: {
-        baseURL: 'https://api.bot.mtheb.tv',
+        baseURL: tesConfig.baseURL,
         server: server
     }
 }

@@ -5,6 +5,7 @@
 
 const {httpsRequest} = require('../../utils');
 const DBService = require('../../dbservice');
+const authorization = require('../../config/authConfig');
 const crypto = require('crypto');
 
 const post = (actions, sessionPool, req, res) => {
@@ -12,14 +13,14 @@ const post = (actions, sessionPool, req, res) => {
     const redirectURI = process.env.NODE_ENV == 'development' ? 'http://localhost:8081/auth' : 'https://bot.mtheb.tv/auth';
     if (code) {
         httpsRequest(
-            `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectURI}`,
+            `${authorization.authentication}${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectURI}`,
             {method: 'POST'}
         ).then(r => {
             let headers = {
                 'Client-ID': process.env.CLIENT_ID,
                 'Authorization': `Bearer ${r.access_token}`
             }
-            httpsRequest(`https://api.twitch.tv/helix/users`, {headers: headers, method: 'GET'}).then(user => {
+            httpsRequest(authorization.users, {headers: headers, method: 'GET'}).then(user => {
                 const createSession = _ => {
                     actions.refreshChannelData(user.data[0].id);
                     let sessionId = crypto.randomBytes(20).toString('hex').slice(0, 20);
