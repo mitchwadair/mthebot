@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const mysql = require('mysql2');
+const mysql = require('mysql');
 const {timedLog} = require('./utils');
 const defaultEvents = require('./defaultEvents.json');
 
