@@ -9,14 +9,14 @@ const crypto = require('crypto');
 
 const post = (actions, sessionPool, req, res) => {
     const code = req.body ? req.body.code : null;
-    const redirectURI = process.env.NODE_ENV == 'development' ? 'http://localhost:8081/auth' : 'https://bot.mtheb.tv/auth';
+    const {AUTH_REDIRECT_URL, CLIENT_ID, CLIENT_SECRET} = process.env;
     if (code) {
         httpsRequest(
-            `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${redirectURI}`,
+            `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${AUTH_REDIRECT_URL}`,
             {method: 'POST'}
         ).then(r => {
             let headers = {
-                'Client-ID': process.env.CLIENT_ID,
+                'Client-ID': CLIENT_ID,
                 'Authorization': `Bearer ${r.access_token}`
             }
             httpsRequest(`https://api.twitch.tv/helix/users`, {headers: headers, method: 'GET'}).then(user => {
