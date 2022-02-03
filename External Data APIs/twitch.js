@@ -6,11 +6,13 @@
 const httpsRequest = require('../utils').httpsRequest;
 const DBService = require('../dbservice');
 
+const {CLIENT_ID, CLIENT_SECRET} = process.env;
+
 let appAccessToken;
 
 const createHeaderObject = token => {
     return {
-        'client-id': process.env.CLIENT_ID,
+        'client-id': CLIENT_ID,
         'Authorization': `Bearer ${token}`
     }
 }
@@ -36,7 +38,7 @@ const getTokenForChannel = id => {
             }).catch(err => {
                 if (err.status === 401 && err.message === 'invalid access token') {
                     httpsRequest(
-                        `https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${tokens.refresh_token}`,
+                        `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${tokens.refresh_token}`,
                         {method: 'POST'}
                     ).then(data => {
                         DBService.updateTokensForChannel(id, data.access_token, data.refresh_token).then(_ => {
@@ -57,7 +59,7 @@ const getTokenForChannel = id => {
 const getAppAccessToken = _ => {
     return new Promise((resolve, reject) => {
         const getNewToken = _ => {
-            httpsRequest(`https://id.twitch.tv/oauth2/token?client_id=${process.env.CLIENT_ID}&client_secret=${process.env.CLIENT_SECRET}&grant_type=client_credentials`, {method: 'POST'})
+            httpsRequest(`https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=client_credentials`, {method: 'POST'})
                 .then(data => {
                     appAccessToken = data.access_token;
                     resolve(appAccessToken);

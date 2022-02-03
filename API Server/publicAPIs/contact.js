@@ -6,10 +6,11 @@
 const nodemailer = require('nodemailer');
 
 const post = (req, res) => {
+    const {EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD} = process.env;
     let body = req.body;
     const emailData = {
         from: '', //this is ignored by gmail
-        to: process.env.GMAIL_USERNAME,
+        to: EMAIL_USERNAME,
         subject: `${encodeURIComponent(body.type)}: "${encodeURIComponent(body.subject)}" from ${encodeURIComponent(body.name)}`,
         html: `
             <p>${encodeURIComponent(body.type)} contact from ${encodeURIComponent(body.name)}, ${encodeURIComponent(body.email)}</p></br>
@@ -18,13 +19,15 @@ const post = (req, res) => {
         `,
     }
 
+    
+
     const transport = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465,
+        host: EMAIL_HOST,
+        port: EMAIL_PORT,
         secure: true,
         auth: {
-            user: process.env.GMAIL_USERNAME,
-            pass: process.env.GMAIL_PASSWORD
+            user: EMAIL_USERNAME,
+            pass: EMAIL_PASSWORD
         },
     });
     transport.sendMail(emailData, err => {

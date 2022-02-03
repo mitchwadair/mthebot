@@ -13,12 +13,14 @@ class DBService {
             DBService._instance = this;
         }
 
+        const {RDS_HOSTNAME, RDS_USERNAME, RDS_PASSWORD, RDS_PORT, RDS_DB_NAME} = process.env;
+
         this.db = mysql.createConnection({
-            host: process.env.RDS_HOSTNAME,
-            user: process.env.RDS_USERNAME,
-            password: process.env.RDS_PASSWORD,
-            port: process.env.RDS_PORT,
-            database: process.env.RDS_DB_NAME
+            host: RDS_HOSTNAME,
+            user: RDS_USERNAME,
+            password: RDS_PASSWORD,
+            port: RDS_PORT,
+            database: RDS_DB_NAME
         });
     
         this.db.connect(err => {

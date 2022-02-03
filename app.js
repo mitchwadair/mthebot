@@ -14,6 +14,8 @@ const {timedLog, getUserLevel} = require('./utils');
 const TimerEmitter = require('./timerEmitter');
 const DATA_TAGS = require('./DataTags/datatags');
 
+const {BOT_USERNAME, OAUTH_TOKEN, CLIENT_ID, CLIENT_SECRET, TES_BASE_URL} = process.env;
+
 // ===================== HELPER FUNCTIONS =====================
 
 // extend Array to include a 'chunk' function
@@ -270,8 +272,8 @@ const onFollow = event => {
 
 const opts = {
     identity: {
-        username: process.env.BOT_USERNAME,
-        password: process.env.OAUTH_TOKEN,
+        username: BOT_USERNAME,
+        password: OAUTH_TOKEN,
     },
     channels: [
         'MtheB_'
@@ -362,11 +364,11 @@ const server = APIServer(actions);
 
 const tesConfig = {
     identity: {
-        id: process.env.CLIENT_ID,
-        secret: process.env.CLIENT_SECRET
+        id: CLIENT_ID,
+        secret: CLIENT_SECRET
     },
     listener: {
-        baseURL: 'https://api.bot.mtheb.tv',
+        baseURL: TES_BASE_URL,
         server: server
     }
 }
