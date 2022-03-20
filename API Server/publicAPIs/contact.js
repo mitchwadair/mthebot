@@ -4,22 +4,28 @@
 // https://opensource.org/licenses/MIT
 
 const nodemailer = require('nodemailer');
+const {validationResult} = require("express-validator");
 
 const post = (req, res) => {
+    const result = validationResult(req).formatWith(({location, param, msg, value}) => `${location}[${param}]: ${msg} "${value}"`);
+    if (!result.isEmpty()) {
+        res.status(400).json({errors: result.array()});
+        return;
+    }
+
     const {EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD} = process.env;
-    let body = req.body;
+    const {type, subject, name, email, message} = req.body;
+
     const emailData = {
         from: '', //this is ignored by gmail
         to: EMAIL_USERNAME,
-        subject: `${encodeURIComponent(body.type)}: "${encodeURIComponent(body.subject)}" from ${encodeURIComponent(body.name)}`,
+        subject: `${type}: "${subject}" from ${name}`,
         html: `
-            <p>${encodeURIComponent(body.type)} contact from ${encodeURIComponent(body.name)}, ${encodeURIComponent(body.email)}</p></br>
-            <p>${encodeURIComponent(body.message)}</p></br>
-            <a href="mailto:${encodeURIComponent(body.email)}?subject=RE: ${encodeURIComponent(body.type)}: ${encodeURIComponent(body.subject)}&body=Hi ${encodeURIComponent(body.name.split(' ')[0])},\n\n\nYou said:\n${encodeURIComponent(body.message)}">Reply</a>
+            <p>"${type}" contact from ${name}, ${email}</p></br>
+            <p>${message}</p></br>
+            <a href="mailto:${email}?subject=RE: ${type}: ${subject}&body=Hi ${name.split(' ')[0]},\n\n\nYou said:\n${message}">Reply</a>
         `,
     }
-
-    
 
     const transport = nodemailer.createTransport({
         host: EMAIL_HOST,
@@ -32,12 +38,10 @@ const post = (req, res) => {
     });
     transport.sendMail(emailData, err => {
         if (err) {
-            res.writeHead(500);
-            res.end(err.toString());
+            res.status(500).send(err.toString());
             return;
         }
-        res.writeHead(200);
-        res.end("contact sent sucessfully");
+        res.status(200).send("contact sent sucessfully");
     });
 }
 
