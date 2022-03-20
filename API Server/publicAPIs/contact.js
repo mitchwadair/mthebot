@@ -9,14 +9,13 @@ const {validationResult} = require("express-validator");
 const post = (req, res) => {
     const result = validationResult(req).formatWith(({location, param, msg, value}) => `${location}[${param}]: ${msg} "${value}"`);
     if (!result.isEmpty()) {
-        res.status(400);
-        res.json({errors: result.array()});
+        res.status(400).json({errors: result.array()});
         return;
     }
 
     const {EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD} = process.env;
     const {type, subject, name, email, message} = req.body;
-    
+
     const emailData = {
         from: '', //this is ignored by gmail
         to: EMAIL_USERNAME,
@@ -39,12 +38,10 @@ const post = (req, res) => {
     });
     transport.sendMail(emailData, err => {
         if (err) {
-            res.status(500);
-            res.end(err.toString());
+            res.status(500).send(err.toString());
             return;
         }
-        res.status(200);
-        res.end("contact sent sucessfully");
+        res.status(200).send("contact sent sucessfully");
     });
 }
 
