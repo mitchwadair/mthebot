@@ -4,7 +4,6 @@
 // https://opensource.org/licenses/MIT
 
 const mysql = require('mysql2');
-const {timedLog} = require('./utils');
 const defaultEvents = require('./defaultEvents.json');
 
 class DBService {
