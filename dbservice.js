@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const mysql = require('mysql');
+const mysql = require('mysql2');
 const {timedLog} = require('./utils');
 const defaultEvents = require('./defaultEvents.json');
 
@@ -15,20 +15,12 @@ class DBService {
 
         const {RDS_HOSTNAME, RDS_USERNAME, RDS_PASSWORD, RDS_PORT, RDS_DB_NAME} = process.env;
 
-        this.db = mysql.createConnection({
+        this.db = mysql.createPool({
             host: RDS_HOSTNAME,
             user: RDS_USERNAME,
             password: RDS_PASSWORD,
             port: RDS_PORT,
             database: RDS_DB_NAME
-        });
-    
-        this.db.connect(err => {
-            if (err) {
-                console.error(`** DB Connection failed: ${err.stack}`);
-                return;
-            }
-            timedLog(`** Connected to DB`);
         });
 
         return DBService._instance;
