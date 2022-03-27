@@ -53,7 +53,7 @@ const onConnected = async (address, port) => {
         }
         timedLog(`** BOT: All channels joined`);
     } catch (err) {
-        timedLog(`** BOT: Error joining channels: ${err.message}`);
+        timedLog(`** BOT: ERROR joining channels: ${err.message}`);
     }
 };
 
