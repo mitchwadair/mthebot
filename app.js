@@ -40,7 +40,7 @@ const onConnected = async (address, port) => {
         const channels = await DBService.getEnabledChannels();
         const channelData = await twitchAPI.getBatchUsersByID(channels);
         const batches = channelData.chunk(50);
-        for (const [batch, i] of batches.entries()) {
+        for (const [i, batch] of batches.entries()) {
             await new Promise((resolve) => {
                 setTimeout(() => {
                     let joinPromises = [];
@@ -52,8 +52,8 @@ const onConnected = async (address, port) => {
             });
         }
         timedLog(`** BOT: All channels joined`);
-    } catch (error) {
-        timedLog(`** BOT: Error joining channels: ${e}`);
+    } catch (err) {
+        timedLog(`** BOT: Error joining channels: ${err.message}`);
     }
 };
 
@@ -100,7 +100,7 @@ const onChat = async (channelKey, userstate, message, self) => {
             }
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -117,7 +117,7 @@ const onHost = async (channelKey, username, viewers, autohost) => {
                 client.say(channelKey, msg);
             }
         } catch (err) {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+            timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
         }
     }
 };
@@ -134,7 +134,7 @@ const onRaid = async (channelKey, username, viewers) => {
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -153,7 +153,7 @@ const onResub = async (channelKey, username, monthStreak, _message, userstate, m
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -173,7 +173,7 @@ const onSubGift = async (channelKey, username, monthStreak, recipient, methods, 
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -192,7 +192,7 @@ const onSubMysteryGift = async (channelKey, username, numbOfSubs, methods, users
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -208,7 +208,7 @@ const onSub = async (channelKey, username, methods, _message, _userstate) => {
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -222,7 +222,7 @@ const onAnonGiftUpgrade = async (channelKey, username, _userstate) => {
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -238,7 +238,7 @@ const onGiftUpgrade = async (channelKey, username, sender, _userstate) => {
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -254,7 +254,7 @@ const onCheer = async (channelKey, userstate, _message) => {
             client.say(channelKey, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelName}: ${err.message}`);
     }
 };
 
@@ -267,7 +267,7 @@ const onFollow = async ({ broadcaster_user_login, user_name }) => {
             client.say(`#${broadcaster_user_login}`, msg);
         }
     } catch (err) {
-        timedLog(`** BOT: ERROR ON CHANNEL ${broadcaster_user_login}: ${err}`);
+        timedLog(`** BOT: ERROR ON CHANNEL ${broadcaster_user_login}: ${err.message}`);
     }
 };
 
@@ -317,7 +317,7 @@ const actions = {
                 timedLog(`** refreshed channel ${name}`);
             }
         } catch (err) {
-            timedLog(`** ERROR refreshing channel ${channelID}: ${err}`);
+            timedLog(`** ERROR refreshing channel ${channelID}: ${err.message}`);
         }
     },
     joinChannel: async (channelID) => {
@@ -327,7 +327,7 @@ const actions = {
                 await client.join(data.name);
             }
         } catch (err) {
-            timedLog(`** ERROR joining channel ${channelID}: ${err}`);
+            timedLog(`** ERROR joining channel ${channelID}: ${err.message}`);
         }
     },
     leaveChannel: async (channelID) => {
@@ -337,7 +337,7 @@ const actions = {
                 await client.part(data.name);
             }
         } catch (err) {
-            timedLog(`** ERROR leaving channel ${channelID}: ${err}`);
+            timedLog(`** ERROR leaving channel ${channelID}: ${err.message}`);
         }
     },
     subscribeFollow: (channelID) => {

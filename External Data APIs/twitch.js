@@ -92,11 +92,12 @@ const getAppAccessToken = () => {
 };
 
 module.exports = {
-    getUser: (id) => {
+    getUser: (key, isByLogin = false) => {
         return new Promise((resolve, reject) => {
             getAppAccessToken()
                 .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/users?id=${id}`, {
+                    const query = isByLogin ? "login" : "id";
+                    httpsRequest(`https://api.twitch.tv/helix/users?${query}=${key}`, {
                         headers: createHeaderObject(token),
                         method: "GET",
                     })
