@@ -92,11 +92,11 @@ const getAppAccessToken = () => {
 };
 
 module.exports = {
-    getUser: (loginName) => {
+    getUser: (id) => {
         return new Promise((resolve, reject) => {
             getAppAccessToken()
                 .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/users?login=${loginName}`, {
+                    httpsRequest(`https://api.twitch.tv/helix/users?id=${id}`, {
                         headers: createHeaderObject(token),
                         method: "GET",
                     })
