@@ -1,15 +1,13 @@
 // Copyright (c) 2020 Mitchell Adair
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
 class TimerEmitter {
     constructor(tmiClient) {
-        if (TimerEmitter._instance)
-            return TimerEmitter._instance;
+        if (TimerEmitter._instance) return TimerEmitter._instance;
 
-        if (!(this instanceof TimerEmitter))
-            return new TimerEmitter(tmiClient);
+        if (!(this instanceof TimerEmitter)) return new TimerEmitter(tmiClient);
 
         TimerEmitter._instance = this;
 

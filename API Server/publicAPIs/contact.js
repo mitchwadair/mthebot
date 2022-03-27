@@ -1,31 +1,35 @@
 // Copyright (c) 2020 Mitchell Adair
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const nodemailer = require('nodemailer');
-const {validationResult} = require("express-validator");
+const nodemailer = require("nodemailer");
+const { validationResult } = require("express-validator");
 
 const post = (req, res) => {
-    const result = validationResult(req).formatWith(({location, param, msg, value}) => `${location}[${param}]: ${msg} "${value}"`);
+    const result = validationResult(req).formatWith(
+        ({ location, param, msg, value }) => `${location}[${param}]: ${msg} "${value}"`
+    );
     if (!result.isEmpty()) {
-        res.status(400).json({errors: result.array()});
+        res.status(400).json({ errors: result.array() });
         return;
     }
 
-    const {EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD} = process.env;
-    const {type, subject, name, email, message} = req.body;
+    const { EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD } = process.env;
+    const { type, subject, name, email, message } = req.body;
 
     const emailData = {
-        from: '', //this is ignored by gmail
+        from: "", //this is ignored by gmail
         to: EMAIL_USERNAME,
         subject: `${type}: "${subject}" from ${name}`,
         html: `
             <p>"${type}" contact from ${name}, ${email}</p></br>
             <p>${message}</p></br>
-            <a href="mailto:${email}?subject=RE: ${type}: ${subject}&body=Hi ${name.split(' ')[0]},\n\n\nYou said:\n${message}">Reply</a>
+            <a href="mailto:${email}?subject=RE: ${type}: ${subject}&body=Hi ${
+            name.split(" ")[0]
+        },\n\n\nYou said:\n${message}">Reply</a>
         `,
-    }
+    };
 
     const transport = nodemailer.createTransport({
         host: EMAIL_HOST,
@@ -33,18 +37,18 @@ const post = (req, res) => {
         secure: true,
         auth: {
             user: EMAIL_USERNAME,
-            pass: EMAIL_PASSWORD
+            pass: EMAIL_PASSWORD,
         },
     });
-    transport.sendMail(emailData, err => {
+    transport.sendMail(emailData, (err) => {
         if (err) {
             res.status(500).send(err.toString());
             return;
         }
         res.status(200).send("contact sent sucessfully");
     });
-}
+};
 
 module.exports = {
-    post
-}
+    post,
+};

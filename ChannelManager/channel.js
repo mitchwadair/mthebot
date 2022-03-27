@@ -1,5 +1,5 @@
 // Copyright (c) 2020 Mitchell Adair
-// 
+//
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
@@ -14,14 +14,14 @@ class Channel {
         this.timers = timers.map((timer, i) => {
             if (timer.enabled) {
                 return {
-                    interval: setInterval(_ => {
+                    interval: setInterval(() => {
                         if (this.timers[i].messageCount >= timer.message_threshold) {
                             this.timers[i].messageCount = 0;
                             TimerEmitter.getInstance().emit(`#${key}`, timer.message);
                         }
-                    }, timer.interval*1000),
+                    }, timer.interval * 1000),
                     messageCount: 0,
-                }
+                };
             }
         });
 
@@ -41,7 +41,7 @@ class Channel {
     }
 
     getCommand(alias) {
-        return this.getCommands().find(cmd => {
+        return this.getCommands().find((cmd) => {
             return cmd.alias == alias;
         });
     }
@@ -55,14 +55,14 @@ class Channel {
     }
 
     clearTimers() {
-        this.timers.forEach(timer => {
+        this.timers.forEach((timer) => {
             clearInterval(timer.interval);
         });
     }
 
     incrementTimers() {
-        this.timers.forEach(timer => {
-            timer.messageCount++
+        this.timers.forEach((timer) => {
+            timer.messageCount++;
         });
     }
 }
