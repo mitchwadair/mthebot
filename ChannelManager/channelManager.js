@@ -73,7 +73,7 @@ class ChannelManager {
 
             if (channel.name !== channelKey) {
                 await DBService.updateNameForChannel(channelKey, channelID);
-                timedLog(`** updated name for id ${channelID} in DB to ${channelKey}`);
+                timedLog(`** BOT: Updated name for id ${channelID} in DB to ${channelKey}`);
             }
 
             const commands = await DBService.getAllCommandsForChannel(channelID);
@@ -90,7 +90,7 @@ class ChannelManager {
 
             this.addChannel(channelKey, channelID, commands, events, timers);
         } catch (error) {
-            timedLog(`** BOT: Error getting user data for channel ${channelKey}`);
+            timedLog(`** BOT: ERROR getting user data for channel ${channelKey}`);
             throw error;
         }
     }
