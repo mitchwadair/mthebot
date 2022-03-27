@@ -33,41 +33,28 @@ Array.prototype.chunk = function (maxChunkSize) {
 
 // ===================== EVENT HANDLERS =====================
 
-const onConnected = (address, port) => {
+const onConnected = async (address, port) => {
     timedLog(`** MtheBot_ connected to ${address}:${port}`);
     timedLog(`** joining all serviced channels...`);
-    DBService.getEnabledChannels().then((channels) => {
-        twitchAPI.getBatchUsersByID(channels).then((data) => {
-            let batches = data.chunk(50);
-            let promises = [];
-            batches.forEach((batch, i) => {
-                promises.push(
-                    new Promise((resolve, reject) => {
-                        setTimeout(() => {
-                            let joinPromises = [];
-                            batch.forEach((user) => {
-                                joinPromises.push(client.join(user.name));
-                            });
-                            Promise.all(joinPromises)
-                                .then(() => {
-                                    resolve();
-                                })
-                                .catch((e) => {
-                                    reject(e);
-                                });
-                        }, i * 15000);
-                    })
-                );
+    try {
+        const channels = await DBService.getEnabledChannels();
+        const channelData = await twitchAPI.getBatchUsersByID(channels);
+        const batches = channelData.chunk(50);
+        batches.forEach((batch, i) => {
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    let joinPromises = [];
+                    batch.forEach((user) => {
+                        joinPromises.push(client.join(user.name));
+                    });
+                    Promise.all(joinPromises).then(resolve);
+                }, i * 15000);
             });
-            Promise.all(promises)
-                .then(() => {
-                    timedLog(`** BOT: All channels joined`);
-                })
-                .catch((e) => {
-                    timedLog(`** BOT: Error joining channels: ${e}`);
-                });
         });
-    });
+        timedLog(`** BOT: All channels joined`);
+    } catch (error) {
+        timedLog(`** BOT: Error joining channels: ${e}`);
+    }
 };
 
 const onChat = (channel, userstate, message, self) => {
