@@ -81,11 +81,8 @@ class ChannelManager {
 
             let events = {};
             const eventsData = await DBService.getAllEventsForChannel(channelID);
-            eventsData.forEach((e) => {
-                events[e.name] = {
-                    message: e.message,
-                    enabled: e.enabled,
-                };
+            eventsData.forEach(({ name, message, enabled }) => {
+                events[name] = { message, enabled };
             });
 
             this.addChannel(channelKey, channelID, commands, events, timers);
