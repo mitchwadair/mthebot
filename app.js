@@ -57,59 +57,50 @@ const onConnected = async (address, port) => {
     }
 };
 
-const onChat = (channel, userstate, message, self) => {
+const onChat = async (channelName, userstate, message, self) => {
     if (self) return;
 
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            ChannelManager.getChannel(channelKey).incrementTimers();
-            const full = message.trim();
+    const channelKey = channelName.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelKey);
+        channel.incrementTimers();
+        const full = message.trim();
 
-            if (full.startsWith("!")) {
-                const userLevel = getUserLevel(userstate);
-                const args = full.split(" ");
-                const alias = args.shift().substring(1);
-                const command = ChannelManager.getChannel(channelKey).getCommand(alias);
+        if (full.startsWith("!")) {
+            const userLevel = getUserLevel(userstate);
+            const args = full.split(" ");
+            const alias = args.shift().substring(1);
+            const command = channel.getCommand(alias);
 
-                if (command && !command.isOnCooldown && userLevel >= command.user_level) {
-                    command.isOnCooldown = true;
-                    setTimeout(() => {
-                        command.isOnCooldown = false;
-                    }, command.cooldown * 1000);
-                    let message = command.message
-                        .replace(new RegExp("{{sender}}", "g"), userstate["display-name"])
-                        .replace(new RegExp("{{channel}}", "g"), channelKey)
-                        .replace(
-                            new RegExp("{{commands}}", "g"),
-                            ChannelManager.getChannel(channelKey)
-                                .getCommands()
-                                .filter((c) => c.user_level === 0)
-                                .map((c) => `!${c.alias}`)
-                                .join(", ")
-                        );
-                    let messagePromises = [];
-                    DATA_TAGS.forEach((dt) => {
-                        if (message.includes(dt.tag)) {
-                            messagePromises.push(dt.dataFetch(channelKey, userstate));
-                        }
-                    });
-                    Promise.allSettled(messagePromises).then((results) => {
-                        results.forEach((r) => {
-                            if (r.status === "fulfilled") {
-                                message = message.replace(new RegExp(r.value.tag, "g"), r.value.value);
-                            } else {
-                                message = message.replace(new RegExp(r.reason.tag, "g"), r.reason.reason);
-                            }
-                        });
-                        client.say(channel, message);
-                    });
-                }
+            if (command && !command.isOnCooldown && userLevel >= command.user_level) {
+                command.isOnCooldown = true;
+                setTimeout(() => {
+                    command.isOnCooldown = false;
+                }, command.cooldown * 1000);
+
+                let message = command.message
+                    .replace(new RegExp("{{sender}}", "g"), userstate["display-name"])
+                    .replace(new RegExp("{{channel}}", "g"), channelKey)
+                    .replace(
+                        new RegExp("{{commands}}", "g"),
+                        channel.getCommands()
+                            .filter((c) => c.user_level === 0)
+                            .map((c) => `!${c.alias}`)
+                            .join(", ")
+                    );
+                DATA_TAGS.forEach(({ tag, dataFetch }) => {
+                    if (message.includes(tag)) {
+                        const value = await dataFetch(channelKey, userstate);
+                        message = message.replace(new RegExp(tag, "g"), value);
+                    }
+                });
+
+                client.say(channelName, message);
             }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
+    }
 };
 
 const onHost = (channel, username, viewers, autohost) => {
