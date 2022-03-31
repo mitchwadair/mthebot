@@ -55,119 +55,41 @@ class ChannelManager {
 
     // process the given channel
     // either restart the timeout func or add the channel to active channels
-    processChannel(channelKey) {
-        return new Promise((resolve, reject) => {
-            if (this.getChannel(channelKey)) {
-                this.refreshChannel(channelKey);
-                resolve();
-            } else {
-                this.fetchChannelData(channelKey)
-                    .then(() => {
-                        timedLog(`** BOT: Added channel ${channelKey} to active channels`);
-                        resolve();
-                    })
-                    .catch((err) => {
-                        reject(err);
-                    });
-            }
-        });
+    async processChannel(channelKey) {
+        if (this.getChannel(channelKey)) {
+            this.refreshChannel(channelKey);
+        } else {
+            await this.fetchChannelData(channelKey);
+            timedLog(`** BOT: Added channel ${channelKey} to active channels`);
+        }
+        return this.getChannel(channelKey);
     }
 
     // get channel data from DB
-    fetchChannelData(channelKey) {
-        return new Promise((resolve, reject) => {
-            twitchAPI
-                .getUser(channelKey)
-                .then((data) => {
-                    DBService.getChannel(data.id)
-                        .then((channel) => {
-                            if (channel.name !== channelKey) {
-                                DBService.updateNameForChannel(channelKey, data.id)
-                                    .then(() => {
-                                        timedLog(`** updated name for id ${data.id} in DB to ${channelKey}`);
-                                    })
-                                    .catch((err) => {
-                                        timedLog(`** error updating name for id ${data.id}: ${err}`);
-                                    });
-                            }
+    async fetchChannelData(channelKey) {
+        try {
+            const { id: channelID } = await twitchAPI.getUser(channelKey, true);
+            const channel = await DBService.getChannel(channelID);
 
-                            let commands = [];
-                            let events = {};
-                            let timers = [];
-                            let promises = [];
+            if (channel.name !== channelKey) {
+                await DBService.updateNameForChannel(channelKey, channelID);
+                timedLog(`** BOT: Updated name for id ${channelID} in DB to ${channelKey}`);
+            }
 
-                            promises.push(
-                                new Promise((resolve, reject) => {
-                                    DBService.getAllCommandsForChannel(data.id)
-                                        .then((cmds) => {
-                                            commands = cmds.map((c) => {
-                                                return {
-                                                    alias: c.alias,
-                                                    message: c.message,
-                                                    cooldown: c.cooldown,
-                                                    user_level: c.user_level,
-                                                };
-                                            });
-                                            resolve();
-                                        })
-                                        .catch((err) => {
-                                            reject(err);
-                                        });
-                                })
-                            );
-                            promises.push(
-                                new Promise((resolve, reject) => {
-                                    DBService.getAllEventsForChannel(data.id)
-                                        .then((evts) => {
-                                            evts.forEach((e) => {
-                                                events[e.name] = {
-                                                    message: e.message,
-                                                    enabled: e.enabled,
-                                                };
-                                            });
-                                            resolve();
-                                        })
-                                        .catch((err) => {
-                                            reject(err);
-                                        });
-                                })
-                            );
-                            promises.push(
-                                new Promise((resolve, reject) => {
-                                    DBService.getAllTimersForChannel(data.id)
-                                        .then((tmrs) => {
-                                            timers = tmrs.map((t) => {
-                                                return {
-                                                    name: t.name,
-                                                    message: t.message,
-                                                    enabled: t.enabled,
-                                                    interval: t.interval,
-                                                    message_threshold: t.message_threshold,
-                                                };
-                                            });
-                                            resolve();
-                                        })
-                                        .catch((err) => {
-                                            reject(err);
-                                        });
-                                })
-                            );
+            const commands = await DBService.getAllCommandsForChannel(channelID);
+            const timers = await DBService.getAllTimersForChannel(channelID);
 
-                            Promise.all(promises).then(() => {
-                                this.addChannel(channelKey, data.id, commands, events, timers);
-                                timedLog(`** fetched data for channel ${channelKey}`);
-                                resolve();
-                            });
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    timedLog(`** BOT: Error getting user data for channel ${channelKey}`);
-                    reject(err);
-                });
-        });
+            let events = {};
+            const eventsData = await DBService.getAllEventsForChannel(channelID);
+            eventsData.forEach(({ name, message, enabled }) => {
+                events[name] = { message, enabled };
+            });
+
+            this.addChannel(channelKey, channelID, commands, events, timers);
+        } catch (error) {
+            timedLog(`** BOT: ERROR getting user data for channel ${channelKey}`);
+            throw error;
+        }
     }
 }
 

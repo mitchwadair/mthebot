@@ -33,279 +33,247 @@ Array.prototype.chunk = function (maxChunkSize) {
 
 // ===================== EVENT HANDLERS =====================
 
-const onConnected = (address, port) => {
-    timedLog(`** MtheBot_ connected to ${address}:${port}`);
-    timedLog(`** joining all serviced channels...`);
-    DBService.getEnabledChannels().then((channels) => {
-        twitchAPI.getBatchUsersByID(channels).then((data) => {
-            let batches = data.chunk(50);
-            let promises = [];
-            batches.forEach((batch, i) => {
-                promises.push(
-                    new Promise((resolve, reject) => {
-                        setTimeout(() => {
-                            let joinPromises = [];
-                            batch.forEach((user) => {
-                                joinPromises.push(client.join(user.name));
-                            });
-                            Promise.all(joinPromises)
-                                .then(() => {
-                                    resolve();
-                                })
-                                .catch((e) => {
-                                    reject(e);
-                                });
-                        }, i * 15000);
-                    })
-                );
-            });
-            Promise.all(promises)
-                .then(() => {
-                    timedLog(`** BOT: All channels joined`);
-                })
-                .catch((e) => {
-                    timedLog(`** BOT: Error joining channels: ${e}`);
-                });
-        });
-    });
-};
-
-const onChat = (channel, userstate, message, self) => {
-    if (self) return;
-
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            ChannelManager.getChannel(channelKey).incrementTimers();
-            const full = message.trim();
-
-            if (full.startsWith("!")) {
-                const userLevel = getUserLevel(userstate);
-                const args = full.split(" ");
-                const alias = args.shift().substring(1);
-                const command = ChannelManager.getChannel(channelKey).getCommand(alias);
-
-                if (command && !command.isOnCooldown && userLevel >= command.user_level) {
-                    command.isOnCooldown = true;
-                    setTimeout(() => {
-                        command.isOnCooldown = false;
-                    }, command.cooldown * 1000);
-                    let message = command.message
-                        .replace(new RegExp("{{sender}}", "g"), userstate["display-name"])
-                        .replace(new RegExp("{{channel}}", "g"), channelKey)
-                        .replace(
-                            new RegExp("{{commands}}", "g"),
-                            ChannelManager.getChannel(channelKey)
-                                .getCommands()
-                                .filter((c) => c.user_level === 0)
-                                .map((c) => `!${c.alias}`)
-                                .join(", ")
-                        );
-                    let messagePromises = [];
-                    DATA_TAGS.forEach((dt) => {
-                        if (message.includes(dt.tag)) {
-                            messagePromises.push(dt.dataFetch(channelKey, userstate));
-                        }
+const onConnected = async (address, port) => {
+    timedLog(`** BOT: Connected to ${address}:${port}`);
+    timedLog(`** BOT: Joining all serviced channels...`);
+    try {
+        const channels = await DBService.getEnabledChannels();
+        const channelData = await twitchAPI.getBatchUsersByID(channels);
+        const batches = channelData.chunk(50);
+        for (const [i, batch] of batches.entries()) {
+            await new Promise((resolve) => {
+                setTimeout(() => {
+                    let joinPromises = [];
+                    batch.forEach((user) => {
+                        joinPromises.push(client.join(user.name));
                     });
-                    Promise.allSettled(messagePromises).then((results) => {
-                        results.forEach((r) => {
-                            if (r.status === "fulfilled") {
-                                message = message.replace(new RegExp(r.value.tag, "g"), r.value.value);
-                            } else {
-                                message = message.replace(new RegExp(r.reason.tag, "g"), r.reason.reason);
-                            }
-                        });
-                        client.say(channel, message);
-                    });
-                }
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
-};
-
-const onHost = (channel, username, viewers, autohost) => {
-    if (!autohost) {
-        const channelKey = channel.substring(1);
-        ChannelManager.processChannel(channelKey)
-            .then(() => {
-                const data = ChannelManager.getChannel(channelKey).getEvents().host;
-                if (data.enabled) {
-                    let message = data.message
-                        .replace(new RegExp("{{user}}", "g"), username)
-                        .replace(new RegExp("{{viewers}}", "g"), viewers);
-                    client.say(channel, message);
-                }
-            })
-            .catch((err) => {
-                timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
+                    Promise.all(joinPromises).then(resolve);
+                }, i * 15000);
             });
+        }
+        timedLog(`** BOT: All channels joined`);
+    } catch (err) {
+        timedLog(`** BOT: ERROR joining channels: ${err.message}`);
     }
 };
 
-const onRaid = (channel, username, viewers) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().raid;
-            if (data.enabled) {
-                let message = data.message
+const onChat = async (channelKey, userstate, message, self) => {
+    if (self) return;
+
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        channel.incrementTimers();
+        const full = message.trim();
+
+        if (full.startsWith("!")) {
+            const userLevel = getUserLevel(userstate);
+            const args = full.split(" ");
+            const alias = args.shift().substring(1);
+            const command = channel.getCommand(alias);
+
+            if (command && !command.isOnCooldown && userLevel >= command.user_level) {
+                command.isOnCooldown = true;
+                setTimeout(() => {
+                    command.isOnCooldown = false;
+                }, command.cooldown * 1000);
+
+                let message = command.message
+                    .replace(new RegExp("{{sender}}", "g"), userstate["display-name"])
+                    .replace(new RegExp("{{channel}}", "g"), channelName)
+                    .replace(
+                        new RegExp("{{commands}}", "g"),
+                        channel
+                            .getCommands()
+                            .filter((c) => c.user_level === 0)
+                            .map((c) => `!${c.alias}`)
+                            .join(", ")
+                    );
+                for (const { tag, dataFetch } of DATA_TAGS) {
+                    if (message.includes(tag)) {
+                        const value = await dataFetch(channelName, userstate);
+                        message = message.replace(new RegExp(tag, "g"), value);
+                    }
+                }
+
+                client.say(channelKey, message);
+            }
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
+};
+
+const onHost = async (channelKey, username, viewers, autohost) => {
+    if (!autohost) {
+        const channelName = channelKey.substring(1);
+        try {
+            const channel = await ChannelManager.processChannel(channelName);
+            const { enabled, message } = channel.getEvents().host;
+            if (enabled) {
+                let msg = message
                     .replace(new RegExp("{{user}}", "g"), username)
                     .replace(new RegExp("{{viewers}}", "g"), viewers);
-                client.say(channel, message);
+                client.say(channelKey, msg);
             }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+        } catch (err) {
+            timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+        }
+    }
 };
 
-const onResub = (channel, username, monthStreak, message, userstate, methods) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().resub;
-            if (data.enabled) {
-                const months = ~~userstate["msg-param-cumulative-months"];
-                let message = data.message
-                    .replace(new RegExp("{{user}}", "g"), username)
-                    .replace(new RegExp("{{months}}", "g"), months)
-                    .replace(new RegExp("{{streak}}", "g"), monthStreak)
-                    .replace(new RegExp("{{type}}", "g"), methods.planName);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onRaid = async (channelKey, username, viewers) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().raid;
+        if (enabled) {
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{viewers}}", "g"), viewers);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onSubGift = (channel, username, monthStreak, recipient, methods, userstate) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().subgift;
-            if (data.enabled) {
-                const total = ~~userstate["msg-param-sender-count"];
-                let message = data.message
-                    .replace(new RegExp("{{user}}", "g"), username)
-                    .replace(new RegExp("{{total}}", "g"), total)
-                    .replace(new RegExp("{{streak}}", "g"), monthStreak)
-                    .replace(new RegExp("{{recipient}}", "g"), recipient)
-                    .replace(new RegExp("{{type}}", "g"), methods.planName);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onResub = async (channelKey, username, monthStreak, _message, userstate, methods) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().resub;
+        if (enabled) {
+            const months = ~~userstate["msg-param-cumulative-months"];
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{months}}", "g"), months)
+                .replace(new RegExp("{{streak}}", "g"), monthStreak)
+                .replace(new RegExp("{{type}}", "g"), methods.planName);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onSubMysteryGift = (channel, username, numbOfSubs, methods, userstate) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().mysterygift;
-            if (data.enabled) {
-                const total = ~~userstate["msg-param-sender-count"];
-                let message = data.message
-                    .replace(new RegExp("{{user}}", "g"), username)
-                    .replace(new RegExp("{{total}}", "g"), total)
-                    .replace(new RegExp("{{count}}", "g"), numbOfSubs)
-                    .replace(new RegExp("{{type}}", "g"), methods.planName);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onSubGift = async (channelKey, username, monthStreak, recipient, methods, userstate) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().subgift;
+        if (enabled) {
+            const total = ~~userstate["msg-param-sender-count"];
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{total}}", "g"), total)
+                .replace(new RegExp("{{streak}}", "g"), monthStreak)
+                .replace(new RegExp("{{recipient}}", "g"), recipient)
+                .replace(new RegExp("{{type}}", "g"), methods.planName);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onSub = (channel, username, methods, message, userstate) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().sub;
-            if (data.enabled) {
-                let message = data.message
-                    .replace(new RegExp("{{user}}", "g"), username)
-                    .replace(new RegExp("{{type}}", "g"), methods.planName);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onSubMysteryGift = async (channelKey, username, numbOfSubs, methods, userstate) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().mysterygift;
+        if (enabled) {
+            const total = ~~userstate["msg-param-sender-count"];
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{total}}", "g"), total)
+                .replace(new RegExp("{{count}}", "g"), numbOfSubs)
+                .replace(new RegExp("{{type}}", "g"), methods.planName);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onAnonGiftUpgrade = (channel, username, userstate) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().anongiftupgrade;
-            if (data.enabled) {
-                let message = data.message.replace(new RegExp("{{user}}", "g"), username);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onSub = async (channelKey, username, methods, _message, _userstate) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().sub;
+        if (enabled) {
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{type}}", "g"), methods.planName);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onGiftUpgrade = (channel, username, sender, userstate) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().giftupgrade;
-            if (data.enabled) {
-                let message = data.message
-                    .replace(new RegExp("{{user}}", "g"), username)
-                    .replace(new RegExp("{{gifter}}", "g"), sender);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onAnonGiftUpgrade = async (channelKey, username, _userstate) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().anongiftupgrade;
+        if (enabled) {
+            let msg = message.replace(new RegExp("{{user}}", "g"), username);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onCheer = (channel, userstate, message) => {
-    const channelKey = channel.substring(1);
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().cheer;
-            if (data.enabled) {
-                let message = data.message
-                    .replace(new RegExp("{{user}}", "g"), username)
-                    .replace(new RegExp("{{amount}}", "g"), userstate.bits);
-                client.say(channel, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onGiftUpgrade = async (channelKey, username, sender, _userstate) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().giftupgrade;
+        if (enabled) {
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{gifter}}", "g"), sender);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
 };
 
-const onFollow = (event) => {
-    const channelKey = event.broadcaster_user_login;
-    ChannelManager.processChannel(channelKey)
-        .then(() => {
-            const data = ChannelManager.getChannel(channelKey).getEvents().follow;
-            if (data.enabled) {
-                let message = data.message.replace(new RegExp("{{user}}", "g"), event.user_name);
-                client.say(`#${channelKey}`, message);
-            }
-        })
-        .catch((err) => {
-            timedLog(`** BOT: ERROR ON CHANNEL ${channelKey}: ${err}`);
-        });
+const onCheer = async (channelKey, userstate, _message) => {
+    const channelName = channelKey.substring(1);
+    try {
+        const channel = await ChannelManager.processChannel(channelName);
+        const { enabled, message } = channel.getEvents().cheer;
+        if (enabled) {
+            let msg = message
+                .replace(new RegExp("{{user}}", "g"), username)
+                .replace(new RegExp("{{amount}}", "g"), userstate.bits);
+            client.say(channelKey, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${channelName}: ${err.message}`);
+    }
+};
+
+const onFollow = async ({ broadcaster_user_login, user_name }) => {
+    try {
+        const channel = await ChannelManager.processChannel(broadcaster_user_login);
+        const { enabled, message } = channel.getEvents().follow;
+        if (enabled) {
+            let msg = message.replace(new RegExp("{{user}}", "g"), user_name);
+            client.say(`#${broadcaster_user_login}`, msg);
+        }
+    } catch (err) {
+        timedLog(`** BOT: ERROR on channel ${broadcaster_user_login}: ${err.message}`);
+    }
 };
 
 // ===================== INIT CHAT BOT =====================
 
-const opts = {
+const tmiConfig = {
     identity: {
         username: BOT_USERNAME,
         password: OAUTH_TOKEN,
@@ -317,7 +285,7 @@ const opts = {
     },
 };
 
-const client = new tmi.client(opts);
+const client = new tmi.client(tmiConfig);
 
 // EVENT HANDLER REGISTRATION
 client.on("connected", onConnected);
@@ -338,60 +306,47 @@ new TimerEmitter(client);
 // ===================== INIT API SERVER =====================
 
 const actions = {
-    refreshChannelData: (channelID) => {
-        DBService.getChannel(channelID)
-            .then((channel) => {
-                if (ChannelManager.getChannel(channel.name) !== undefined) {
-                    timedLog(`** refreshing data for channel ${channel.name}...`);
-                    ChannelManager.deleteChannel(channel.name);
-                    ChannelManager.fetchChannelData(channel.name)
-                        .then(() => {
-                            timedLog(`** refreshed channel ${channel.name}`);
-                        })
-                        .catch((err) => {
-                            timedLog(`** ERROR refreshing channel ${channel.name}: ${err}`);
-                        });
-                }
-            })
-            .catch((err) => {
-                timedLog(`** ERROR refreshing channel ${channel.name}: ${err}`);
-            });
+    refreshChannelData: async (channelID) => {
+        try {
+            const channel = await DBService.getChannel(channelID);
+            if (channel && ChannelManager.getChannel(channel.name)) {
+                const { name } = channel;
+                timedLog(`** BOT: Refreshing data for channel ${name}...`);
+                ChannelManager.deleteChannel(name);
+                await ChannelManager.fetchChannelData(name);
+                timedLog(`** BOT: Refreshed channel ${name}`);
+            }
+        } catch (err) {
+            timedLog(`** BOT: ERROR refreshing channel ${channelID}: ${err.message}`);
+        }
     },
-    joinChannel: (channel) => {
-        return twitchAPI.getUser(channel).then((data) => {
-            return data ? client.join(data.name) : true;
-        });
+    joinChannel: async (channelID) => {
+        try {
+            const data = await twitchAPI.getUser(channelID);
+            if (data) {
+                await client.join(data.name);
+            }
+        } catch (err) {
+            timedLog(`** BOT: ERROR joining channel ${channelID}: ${err.message}`);
+        }
     },
-    leaveChannel: (channel) => {
-        return twitchAPI.getUser(channel).then((data) => {
-            return data ? client.part(data.name) : true;
-        });
+    leaveChannel: async (channelID) => {
+        try {
+            const data = await twitchAPI.getUser(channelID);
+            if (data) {
+                await client.part(data.name);
+            }
+        } catch (err) {
+            timedLog(`** BOT: ERROR leaving channel ${channelID}: ${err.message}`);
+        }
     },
-    subscribeFollow: (channel) => {
-        return new Promise((resolve, reject) => {
-            const condition = { broadcaster_user_id: channel };
-            tes.subscribe("channel.follow", condition)
-                .then(() => {
-                    resolve();
-                })
-                .catch((e) => {
-                    timedLog(`** ERROR subscribing to follow event for channel ${channel}: ${e}`);
-                    reject();
-                });
-        });
+    subscribeFollow: (channelID) => {
+        const condition = { broadcaster_user_id: channelID };
+        return tes.subscribe("channel.follow", condition);
     },
     unsubscribeFollow: (channel) => {
-        return new Promise((resolve, reject) => {
-            const condition = { broadcaster_user_id: channel };
-            tes.unsubscribe("channel.follow", condition)
-                .then(() => {
-                    resolve();
-                })
-                .catch((e) => {
-                    timedLog(`** ERROR unsubscribing from follow event for channel ${channel}: ${e}`);
-                    reject();
-                });
-        });
+        const condition = { broadcaster_user_id: channel };
+        return tes.unsubscribe("channel.follow", condition);
     },
 };
 
