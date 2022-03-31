@@ -109,11 +109,12 @@ module.exports = function (actions) {
         });
 
     // EVENTS API ROUTES
+    const { params: eventParamValidators, schema: eventSchemaValidators } = events.validators;
     server
         .route("/events/:channel/:name?")
-        .all(requireAuth)
-        .get(events.get)
-        .put((req, res) => {
+        .all(requireAuth, channelValidator)
+        .get(eventParamValidators, handleValidationResult, events.get)
+        .put(eventParamValidators, eventSchemaValidators, handleValidationResult, (req, res) => {
             events.put(actions, req, res);
         });
 
