@@ -4,17 +4,8 @@
 // https://opensource.org/licenses/MIT
 
 const nodemailer = require("nodemailer");
-const { validationResult } = require("express-validator");
 
 const post = (req, res) => {
-    const result = validationResult(req).formatWith(
-        ({ location, param, msg, value }) => `${location}[${param}]: ${msg} "${value}"`
-    );
-    if (!result.isEmpty()) {
-        res.status(400).json({ errors: result.array() });
-        return;
-    }
-
     const { EMAIL_HOST, EMAIL_PORT, EMAIL_USERNAME, EMAIL_PASSWORD } = process.env;
     const { type, subject, name, email, message } = req.body;
 

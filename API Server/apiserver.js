@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 const express = require("express");
-const { body } = require("express-validator");
+const { body, param } = require("express-validator");
 
 const users = require("./publicAPIs/users");
 const commands = require("./privateAPIs/commands");
@@ -47,6 +47,17 @@ module.exports = function (actions) {
                 res.status(401).send("Unauthorized request to private API");
             }
         }
+    };
+
+    const handleValidationResult = (req, res, next) => {
+        const result = validationResult(req).formatWith(
+            ({ location, param, msg, value }) => `${location}[${param}]: ${msg} "${value}"`
+        );
+        if (!result.isEmpty()) {
+            res.status(400).json({ errors: result.array() });
+            return;
+        }
+        next();
     };
 
     server.use(express.json());
@@ -150,6 +161,7 @@ module.exports = function (actions) {
                 body("email").isEmail().normalizeEmail(),
                 body("message").trim().escape(),
             ],
+            handleValidationResult,
             contact.post
         );
 
