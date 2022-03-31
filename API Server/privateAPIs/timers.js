@@ -5,13 +5,17 @@
 
 const { validateData } = require("../../utils");
 const DBService = require("../../dbservice");
+const { body, param } = require("express-validator");
 
-const schema = {
-    name: "string",
-    enabled: "boolean",
-    message: "string",
-    interval: "number",
-    message_threshold: "number",
+const validators = {
+    param: [param("timer").optional().isString().escape()],
+    schema: [
+        body("name").isString().escape(),
+        body("enabled").isBoolean(),
+        body("message").isString().escape(),
+        body("interval").isNumeric(),
+        body("message_threshold").isNumeric(),
+    ],
 };
 
 const get = async (req, res) => {
@@ -38,14 +42,6 @@ const get = async (req, res) => {
 const post = async (actions, req, res) => {
     const { params, body } = req;
     const channel = params.channel;
-
-    let validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400);
-        res.json(validated);
-        return;
-    }
-
     try {
         const data = await DBService.addTimerForChannel(body, channel);
         if (data) {
@@ -57,7 +53,7 @@ const post = async (actions, req, res) => {
             );
         }
     } catch (err) {
-        res.status(500).send(encodeURIComponent(err.toString()));
+        res.status(500).send(err.message);
     }
 };
 
@@ -66,13 +62,6 @@ const put = async (actions, req, res) => {
         params: { channel, name: timer },
         body,
     } = req;
-
-    const validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400).json(validated);
-        return;
-    }
-
     try {
         const data = await DBService.updateTimerForChannel(timer, body, channel);
         if (data) {
@@ -84,7 +73,7 @@ const put = async (actions, req, res) => {
             );
         }
     } catch (err) {
-        res.status(500).send(encodeURIComponent(err.toString()));
+        res.status(500).send(err.message);
     }
 };
 
@@ -101,7 +90,7 @@ const remove = async (actions, req, res) => {
             );
         }
     } catch (err) {
-        res.status(500).send(encodeURIComponent(err.toString()));
+        res.status(500).send(err.message);
     }
 };
 
@@ -110,4 +99,5 @@ module.exports = {
     post,
     put,
     remove,
+    validators,
 };

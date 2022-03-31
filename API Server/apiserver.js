@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 const express = require("express");
-const { body, param } = require("express-validator");
+const { body, param, validationResult } = require("express-validator");
 
 const users = require("./publicAPIs/users");
 const commands = require("./privateAPIs/commands");
@@ -59,6 +59,8 @@ module.exports = function (actions) {
         }
         next();
     };
+
+    const channelValidator = param("channel").isNumeric();
 
     server.use(express.json());
 
@@ -118,15 +120,15 @@ module.exports = function (actions) {
     // TIMERS API ROUTES
     server
         .route("/timers/:channel/:name?")
-        .all(requireAuth)
-        .get(timers.get)
-        .post((req, res) => {
+        .all(requireAuth, channelValidator)
+        .get(timers.validators.param, handleValidationResult, timers.get)
+        .post(timers.validators.schema, handleValidationResult, (req, res) => {
             timers.post(actions, req, res);
         })
-        .put((req, res) => {
+        .put(timers.validators.param, timers.validators.schema, handleValidationResult, (req, res) => {
             timers.put(actions, req, res);
         })
-        .delete((req, res) => {
+        .delete(timers.validators.param, (req, res) => {
             timers.remove(actions, req, res);
         });
 
