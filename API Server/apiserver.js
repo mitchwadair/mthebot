@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 const express = require("express");
-const { body, param, validationResult } = require("express-validator");
+const { param, validationResult } = require("express-validator");
 
 const users = require("./publicAPIs/users");
 const commands = require("./privateAPIs/commands");
@@ -154,20 +154,8 @@ module.exports = function (actions) {
     });
 
     // CONTACT API ROUTES
-    const CONTACT_TYPES = ["Help", "Bug Report", "Suggestion", "Feedback", "General"];
-    server
-        .route("/contact")
-        .post(
-            [
-                body("type").isIn(CONTACT_TYPES),
-                body("subject").trim().escape(),
-                body("name").trim().escape(),
-                body("email").isEmail().normalizeEmail(),
-                body("message").trim().escape(),
-            ],
-            handleValidationResult,
-            contact.post
-        );
+    const { schema: contactSchemaValidators } = contact.validators;
+    server.route("/contact").post(contactSchemaValidators, handleValidationResult, contact.post);
 
     // USERS API ROUTES
     server.route("/users").get(users.get);
