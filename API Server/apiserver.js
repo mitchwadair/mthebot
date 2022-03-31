@@ -118,17 +118,18 @@ module.exports = function (actions) {
         });
 
     // TIMERS API ROUTES
+    const { params: timerParamValidators, schema: timerSchemaValidators } = timers.validators;
     server
         .route("/timers/:channel/:name?")
         .all(requireAuth, channelValidator)
-        .get(timers.validators.param, handleValidationResult, timers.get)
-        .post(timers.validators.schema, handleValidationResult, (req, res) => {
+        .get(timerParamValidators, handleValidationResult, timers.get)
+        .post(timerSchemaValidators, handleValidationResult, (req, res) => {
             timers.post(actions, req, res);
         })
-        .put(timers.validators.param, timers.validators.schema, handleValidationResult, (req, res) => {
+        .put(timerParamValidators, timerSchemaValidators, handleValidationResult, (req, res) => {
             timers.put(actions, req, res);
         })
-        .delete(timers.validators.param, (req, res) => {
+        .delete(timerParamValidators, handleValidationResult, (req, res) => {
             timers.remove(actions, req, res);
         });
 
