@@ -55,12 +55,10 @@ module.exports = function (actions) {
         );
         if (!result.isEmpty()) {
             res.status(400).json({ errors: result.array() });
-            return;
+            return true;
         }
         next();
     };
-
-    const channelValidator = param("channel").isNumeric();
 
     server.use(express.json());
 
@@ -77,18 +75,22 @@ module.exports = function (actions) {
     });
 
     // check if channel exists for all routes with channel param
-    server.param("channel", (req, res, next, id) => {
-        DBService.getChannel(id)
-            .then((channel) => {
-                if (channel) {
-                    return next();
-                } else {
-                    res.status(404).send(`Channel ${encodeURIComponent(id)} not found`);
-                }
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
+    server.param("channel", async (req, res, next, id) => {
+        try {
+            // hacky way to validate "channel" param in this middleware using express-validator
+            await param("channel").isNumeric()(req, res, () => {});
+            const validationError = await handleValidationResult(req, res, () => {});
+            if (validationError) return;
+
+            const channel = await DBService.getChannel(id);
+            if (channel) {
+                next();
+            } else {
+                res.status(404).send(`Channel ${id} not found`);
+            }
+        } catch (err) {
+            res.status(500).send(err.message);
+        }
     });
 
     // ==== PRIVATE APIS ====
@@ -112,7 +114,7 @@ module.exports = function (actions) {
     const { params: eventParamValidators, schema: eventSchemaValidators } = events.validators;
     server
         .route("/events/:channel/:name?")
-        .all(requireAuth, channelValidator)
+        .all(requireAuth)
         .get(eventParamValidators, handleValidationResult, events.get)
         .put(eventParamValidators, eventSchemaValidators, handleValidationResult, (req, res) => {
             events.put(actions, req, res);
@@ -122,7 +124,7 @@ module.exports = function (actions) {
     const { params: timerParamValidators, schema: timerSchemaValidators } = timers.validators;
     server
         .route("/timers/:channel/:name?")
-        .all(requireAuth, channelValidator)
+        .all(requireAuth)
         .get(timerParamValidators, handleValidationResult, timers.get)
         .post(timerSchemaValidators, handleValidationResult, (req, res) => {
             timers.post(actions, req, res);
