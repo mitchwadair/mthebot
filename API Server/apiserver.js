@@ -78,8 +78,8 @@ module.exports = function (actions) {
     server.param("channel", async (req, res, next, id) => {
         try {
             // hacky way to validate "channel" param in this middleware using express-validator
-            await param("channel").isNumeric()(req, res, () => {});
-            const validationError = await handleValidationResult(req, res, () => {});
+            param("channel").isNumeric()(req, res, () => {});
+            const validationError = handleValidationResult(req, res, () => {});
             if (validationError) return;
 
             const channel = await DBService.getChannel(id);
