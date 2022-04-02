@@ -21,7 +21,7 @@ const get = async (req, res) => {
             res.send(count.toString());
         }
     } catch (err) {
-        res.status(500).send(err.toString());
+        res.status(500).send(err.message);
     }
 };
 
