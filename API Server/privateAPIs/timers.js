@@ -3,107 +3,86 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const { validateData } = require("../../utils");
 const DBService = require("../../dbservice");
+const { body, param } = require("express-validator");
 
-const schema = {
-    name: "string",
-    enabled: "boolean",
-    message: "string",
-    interval: "number",
-    message_threshold: "number",
+const validators = {
+    params: [param("name").optional().isString().escape()],
+    schema: [
+        body("name").isString().escape(),
+        body("enabled").isBoolean(),
+        body("message").isString().escape(),
+        body("interval").isNumeric(),
+        body("message_threshold").isNumeric(),
+    ],
 };
 
-const get = (req, res) => {
-    const channel = req.params.channel;
-    const timer = req.params.name;
-    if (timer) {
-        DBService.getTimerForChannel(timer, channel)
-            .then((data) => {
-                if (data) res.status(200).json(data);
-                else
-                    res.status(404).send(
-                        `Timer ${encodeURIComponent(timer)} not found for channel ${encodeURIComponent(channel)}`
-                    );
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
-    } else {
-        DBService.getAllTimersForChannel(channel)
-            .then((data) => {
-                res.status(200).json(data);
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
-    }
-};
-
-const post = (actions, req, res) => {
-    const channel = req.params.channel;
-    let body = req.body;
-    let validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400);
-        res.json(validated);
-        return;
-    }
-    DBService.addTimerForChannel(body, channel)
-        .then((data) => {
+const get = async (req, res) => {
+    const { channel, name: timer } = req.params;
+    try {
+        if (timer) {
+            const data = await DBService.getTimerForChannel(timer, channel);
             if (data) {
-                actions.refreshChannelData(channel);
                 res.status(200).json(data);
-            } else
-                res.status(400).send(
-                    `Timer ${encodeURIComponent(body.name)} already exists for channel ${encodeURIComponent(channel)}`
-                );
-        })
-        .catch((err) => {
-            res.status(500).send(encodeURIComponent(err.toString()));
-        });
-};
-
-const put = (actions, req, res) => {
-    const channel = req.params.channel;
-    const timer = req.params.name;
-    let body = req.body;
-    let validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400).json(validated);
-        return;
+            } else {
+                res.status(404).send(`Timer ${timer} not found for channel ${channel}`);
+            }
+        } else {
+            const data = await DBService.getAllTimersForChannel(channel);
+            res.status(200).json(data);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
     }
-    DBService.updateTimerForChannel(timer, body, channel)
-        .then((data) => {
-            if (data) {
-                actions.refreshChannelData(channel);
-                res.status(200).json(data);
-            } else
-                res.status(404).send(
-                    `Timer ${encodeURIComponent(timer)} not found for channel ${encodeURIComponent(channel)}`
-                );
-        })
-        .catch((err) => {
-            res.status(500).send(encodeURIComponent(err.toString()));
-        });
 };
 
-const remove = (actions, req, res) => {
-    const channel = req.params.channel;
-    const timer = req.params.name;
-    DBService.deleteTimerForChannel(timer, channel)
-        .then((removed) => {
-            if (removed) {
-                actions.refreshChannelData(channel);
-                res.status(200).send();
-            } else
-                res.status(404).send(
-                    `Timer ${encodeURIComponent(timer)} not found for channel ${encodeURIComponent(channel)}`
-                );
-        })
-        .catch((err) => {
-            res.status(500).send(encodeURIComponent(err.toString()));
-        });
+const post = async (actions, req, res) => {
+    const { params, body } = req;
+    const channel = params.channel;
+    try {
+        const data = await DBService.addTimerForChannel(body, channel);
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).json(data);
+        } else {
+            res.status(400).send(`Timer ${body.name} already exists for channel ${channel}`);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+};
+
+const put = async (actions, req, res) => {
+    const {
+        params: { channel, name: timer },
+        body,
+    } = req;
+    try {
+        const data = await DBService.updateTimerForChannel(timer, body, channel);
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).json(data);
+        } else {
+            res.status(404).send(`Timer ${timer} not found for channel ${channel}`);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+};
+
+const remove = async (actions, req, res) => {
+    const { channel, name: timer } = req.params;
+    try {
+        const removed = await DBService.deleteTimerForChannel(timer, channel);
+        if (removed) {
+            actions.refreshChannelData(channel);
+            res.status(200).send();
+        } else {
+            res.status(404).send(`Timer ${timer} not found for channel ${channel}`);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 };
 
 module.exports = {
@@ -111,4 +90,5 @@ module.exports = {
     post,
     put,
     remove,
+    validators,
 };

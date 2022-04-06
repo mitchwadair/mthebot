@@ -3,80 +3,69 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const { validateData } = require("../../utils");
 const DBService = require("../../dbservice");
+const { body, param } = require("express-validator");
 
-const schema = {
-    enabled: "boolean",
-    message: "string",
+const validators = {
+    params: [param("name").optional().isString().escape()],
+    schema: [body("enabled").isBoolean(), body("message").isString().escape()],
 };
 
-const get = (req, res) => {
-    const channel = req.params.channel;
-    const evt = req.params.name;
-    if (evt) {
-        DBService.getEventForChannel(evt, channel)
-            .then((data) => {
-                if (data) res.status(200).json(data);
-                else
-                    res.status(404).send(
-                        `Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`
-                    );
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
-    } else {
-        DBService.getAllEventsForChannel(channel)
-            .then((data) => {
+const get = async (req, res) => {
+    const { channel, name: evt } = req.params;
+    try {
+        let data;
+        if (evt) {
+            data = await DBService.getEventForChannel(evt, channel);
+            if (data) {
                 res.status(200).json(data);
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
+            } else {
+                res.status(404).send(`Event ${evt} not found for channel ${channel}`);
+            }
+        } else {
+            data = await DBService.getAllEventsForChannel(channel);
+            res.status(200).json(data);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
     }
 };
 
-const put = (actions, req, res) => {
-    const channel = req.params.channel;
-    const evt = req.params.name;
-    let body = req.body;
-    let validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400).json(validated);
-        return;
-    }
-    const updateEvent = () => {
-        DBService.updateEventForChannel(evt, body, channel)
-            .then((data) => {
-                if (data) {
-                    actions.refreshChannelData(channel);
-                    res.status(200).json(data);
-                } else
-                    res.status(404).send(
-                        `Event ${encodeURIComponent(evt)} not found for channel ${encodeURIComponent(channel)}`
-                    );
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
+const put = async (actions, req, res) => {
+    const {
+        params: { channel, name: evt },
+        body,
+    } = req;
+
+    const updateEvent = async () => {
+        const data = await DBService.updateEventForChannel(evt, body, channel);
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).json(data);
+        } else {
+            res.status(404).send(`Event ${evt} not found for channel ${channel}`);
+        }
     };
 
-    if (evt === "follow") {
-        DBService.getEventForChannel(evt, channel).then((data) => {
+    try {
+        if (evt === "follow") {
+            const data = await DBService.getEventForChannel(evt, channel);
             if (data.enabled !== body.enabled) {
-                const act = body.enabled ? actions.subscribeFollow(channel) : actions.unsubscribeFollow(channel);
-                act.then(() => {
-                    updateEvent();
-                }).catch((err) => {
-                    res.status(500).send(encodeURIComponent(err.toString()));
-                });
-            } else updateEvent();
-        });
-    } else updateEvent();
+                if (body.enabled) {
+                    await actions.subscribeFollow(channel);
+                } else {
+                    await actions.unsubscribeFollow(channel);
+                }
+            }
+        }
+        await updateEvent();
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 };
 
 module.exports = {
     get,
     put,
+    validators,
 };

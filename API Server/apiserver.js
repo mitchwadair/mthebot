@@ -4,7 +4,7 @@
 // https://opensource.org/licenses/MIT
 
 const express = require("express");
-const { body } = require("express-validator");
+const { param, validationResult } = require("express-validator");
 
 const users = require("./publicAPIs/users");
 const commands = require("./privateAPIs/commands");
@@ -49,6 +49,17 @@ module.exports = function (actions) {
         }
     };
 
+    const handleValidationResult = (req, res, next) => {
+        const result = validationResult(req).formatWith(
+            ({ location, param, msg, value }) => `${location}[${param}]: ${msg} "${value}"`
+        );
+        if (!result.isEmpty()) {
+            res.status(400).json({ errors: result.array() });
+            return true;
+        }
+        next();
+    };
+
     server.use(express.json());
 
     server.use(function (req, res, next) {
@@ -64,58 +75,65 @@ module.exports = function (actions) {
     });
 
     // check if channel exists for all routes with channel param
-    server.param("channel", (req, res, next, id) => {
-        DBService.getChannel(id)
-            .then((channel) => {
-                if (channel) {
-                    return next();
-                } else {
-                    res.status(404).send(`Channel ${encodeURIComponent(id)} not found`);
-                }
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
+    server.param("channel", async (req, res, next, id) => {
+        try {
+            // hacky way to validate "channel" param in this middleware using express-validator
+            param("channel").isNumeric()(req, res, () => {});
+            const validationError = handleValidationResult(req, res, () => {});
+            if (validationError) return;
+
+            const channel = await DBService.getChannel(id);
+            if (channel) {
+                next();
+            } else {
+                res.status(404).send(`Channel ${id} not found`);
+            }
+        } catch (err) {
+            res.status(500).send(err.message);
+        }
     });
 
     // ==== PRIVATE APIS ====
 
     // COMMANDS API Routes
+    const { params: commandParamValidators, schema: commandSchemaValidators } = commands.validators;
     server
         .route("/commands/:channel/:alias?")
         .all(requireAuth)
-        .get(commands.get)
-        .post((req, res) => {
+        .get(commandParamValidators, handleValidationResult, commands.get)
+        .post(commandSchemaValidators, handleValidationResult, (req, res) => {
             commands.post(actions, req, res);
         })
-        .put((req, res) => {
+        .put(commandParamValidators, commandSchemaValidators, handleValidationResult, (req, res) => {
             commands.put(actions, req, res);
         })
-        .delete((req, res) => {
+        .delete(commandParamValidators, handleValidationResult, (req, res) => {
             commands.remove(actions, req, res);
         });
 
     // EVENTS API ROUTES
+    const { params: eventParamValidators, schema: eventSchemaValidators } = events.validators;
     server
         .route("/events/:channel/:name?")
         .all(requireAuth)
-        .get(events.get)
-        .put((req, res) => {
+        .get(eventParamValidators, handleValidationResult, events.get)
+        .put(eventParamValidators, eventSchemaValidators, handleValidationResult, (req, res) => {
             events.put(actions, req, res);
         });
 
     // TIMERS API ROUTES
+    const { params: timerParamValidators, schema: timerSchemaValidators } = timers.validators;
     server
         .route("/timers/:channel/:name?")
         .all(requireAuth)
-        .get(timers.get)
-        .post((req, res) => {
+        .get(timerParamValidators, handleValidationResult, timers.get)
+        .post(timerSchemaValidators, handleValidationResult, (req, res) => {
             timers.post(actions, req, res);
         })
-        .put((req, res) => {
+        .put(timerParamValidators, timerSchemaValidators, handleValidationResult, (req, res) => {
             timers.put(actions, req, res);
         })
-        .delete((req, res) => {
+        .delete(timerParamValidators, handleValidationResult, (req, res) => {
             timers.remove(actions, req, res);
         });
 
@@ -139,19 +157,8 @@ module.exports = function (actions) {
     });
 
     // CONTACT API ROUTES
-    const CONTACT_TYPES = ["Help", "Bug Report", "Suggestion", "Feedback", "General"];
-    server
-        .route("/contact")
-        .post(
-            [
-                body("type").isIn(CONTACT_TYPES),
-                body("subject").trim().escape(),
-                body("name").trim().escape(),
-                body("email").isEmail().normalizeEmail(),
-                body("message").trim().escape(),
-            ],
-            contact.post
-        );
+    const { schema: contactSchemaValidators } = contact.validators;
+    server.route("/contact").post(contactSchemaValidators, handleValidationResult, contact.post);
 
     // USERS API ROUTES
     server.route("/users").get(users.get);

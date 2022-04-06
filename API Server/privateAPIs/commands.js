@@ -3,108 +3,82 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const { validateData } = require("../../utils");
 const DBService = require("../../dbservice");
+const { body, param } = require("express-validator");
 
-const schema = {
-    alias: "string",
-    message: "string",
-    cooldown: "number",
-    user_level: "number",
+const validators = {
+    params: [param("alias").optional().isString().escape()],
+    schema: [body("message").isString().escape(), body("cooldown").isNumeric(), body("user_level").isNumeric()],
 };
 
-const get = (req, res) => {
-    const channel = req.params.channel;
-    const cmd = req.params.alias;
-    if (cmd) {
-        DBService.getCommandForChannel(cmd, channel)
-            .then((data) => {
-                if (data) res.status(200).json(data);
-                else
-                    res.status(404).send(
-                        `Command ${encodeURIComponent(cmd)} not found for channel ${encodeURIComponent(channel)}`
-                    );
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
-    } else {
-        DBService.getAllCommandsForChannel(channel)
-            .then((data) => {
+const get = async (req, res) => {
+    const { channel, alias: cmd } = req.params;
+    try {
+        if (cmd) {
+            const data = await DBService.getCommandForChannel(cmd, channel);
+            if (data) {
                 res.status(200).json(data);
-            })
-            .catch((err) => {
-                res.status(500).send(encodeURIComponent(err.toString()));
-            });
-    }
-};
-
-const post = (actions, req, res) => {
-    const channel = req.params.channel;
-    const body = req.body;
-    let validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400).json(validated);
-        return;
-    }
-    DBService.addCommandForChannel(body, channel)
-        .then((data) => {
-            if (data) {
-                actions.refreshChannelData(channel);
-                res.status(200).json(body);
             } else {
-                res.status(400).send(
-                    `Command ${encodeURIComponent(body.alias)} already exists for channel ${encodeURIComponent(
-                        channel
-                    )}`
-                );
+                res.status(404).send(`Command ${cmd} not found for channel ${channel}`);
             }
-        })
-        .catch((err) => {
-            res.status(500).send(encodeURIComponent(err.toString()));
-        });
-};
-
-const put = (actions, req, res) => {
-    const channel = req.params.channel;
-    const cmd = req.params.alias;
-    let body = req.body;
-    let validated = validateData(schema, body);
-    if (validated !== true) {
-        res.status(400).json(validated);
-        return;
+        } else {
+            const data = await DBService.getAllCommandsForChannel(channel);
+            res.status(200).json(data);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
     }
-    DBService.updateCommandForChannel(cmd, body, channel)
-        .then((data) => {
-            if (data) {
-                actions.refreshChannelData(channel);
-                res.status(200).json(body);
-            } else
-                res.status(404).send(
-                    `Command ${encodeURIComponent(cmd)} not found for channel ${encodeURIComponent(channel)}`
-                );
-        })
-        .catch((err) => {
-            res.status(500).send(encodeURIComponent(err.toString()));
-        });
 };
 
-const remove = (actions, req, res) => {
-    const channel = req.params.channel;
-    const cmd = req.params.alias;
-    DBService.deleteCommandForChannel(cmd, channel)
-        .then((data) => {
-            if (data) {
-                actions.refreshChannelData(channel);
-                res.status(200).send();
-            } else
-                res.status(404).send(
-                    `Command ${encodeURIComponent(cmd)} not found for channel ${encodeURIComponent(channel)}`
-                );
-        })
-        .catch((err) => {
-            res.status(500).send(encodeURIComponent(err.toString()));
-        });
+const post = async (actions, req, res) => {
+    const {
+        params: { channel },
+        body,
+    } = req;
+    try {
+        const data = await DBService.addCommandForChannel(body, channel);
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).json(body);
+        } else {
+            res.status(400).send(`Command ${body.alias} already exists for channel ${channel}`);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+};
+
+const put = async (actions, req, res) => {
+    const {
+        params: { channel, alias: cmd },
+        body,
+    } = req;
+    try {
+        const data = await DBService.updateCommandForChannel(cmd, body, channel);
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).json(body);
+        } else {
+            res.status(404).send(`Command ${cmd} not found for channel ${channel}`);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
+};
+
+const remove = async (actions, req, res) => {
+    const { channel, alias: cmd } = req.params;
+    try {
+        const data = await DBService.deleteCommandForChannel(cmd, channel);
+        if (data) {
+            actions.refreshChannelData(channel);
+            res.status(200).send();
+        } else {
+            res.status(404).send(`Command ${cmd} not found for channel ${channel}`);
+        }
+    } catch (err) {
+        res.status(500).send(err.message);
+    }
 };
 
 module.exports = {
@@ -112,4 +86,5 @@ module.exports = {
     post,
     put,
     remove,
+    validators,
 };
