@@ -91,8 +91,12 @@ const onChat = async (channelKey, userstate, message, self) => {
                     );
                 for (const { tag, dataFetch } of DATA_TAGS) {
                     if (message.includes(tag)) {
-                        const value = await dataFetch(channelName, userstate);
-                        message = message.replace(new RegExp(tag, "g"), value);
+                        try {
+                            const value = await dataFetch(channelName, userstate);
+                            message = message.replace(new RegExp(tag, "g"), value);
+                        } catch (err) {
+                            message = message.replace(new RegExp(tag, "g"), err.message);
+                        }
                     }
                 }
 
