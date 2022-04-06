@@ -17,228 +17,116 @@ const createHeaderObject = (token) => {
     };
 };
 
-const validateToken = (token) => {
-    return new Promise((resolve, reject) => {
-        httpsRequest("https://id.twitch.tv/oauth2/validate", { method: "GET", headers: createHeaderObject(token) })
-            .then((data) => {
-                if (data.status === 401 && data.message === "invalid access token") reject(data);
-                else resolve();
-            })
-            .catch((err) => {
-                reject(err);
-            });
+const validateToken = async (token) => {
+    const data = await httpsRequest("https://id.twitch.tv/oauth2/validate", {
+        method: "GET",
+        headers: createHeaderObject(token),
     });
+    if (data.status === 401 && data.message === "invalid access token") {
+        throw new Error(data.message);
+    }
 };
 
-const getTokenForChannel = (id) => {
-    return new Promise((resolve, reject) => {
-        DBService.getTokensForChannel(id).then((tokens) => {
-            validateToken(tokens.access_token)
-                .then(() => {
-                    resolve(tokens.access_token);
-                })
-                .catch((err) => {
-                    if (err.status === 401 && err.message === "invalid access token") {
-                        httpsRequest(
-                            `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${tokens.refresh_token}`,
-                            { method: "POST" }
-                        )
-                            .then((data) => {
-                                DBService.updateTokensForChannel(id, data.access_token, data.refresh_token)
-                                    .then(() => {
-                                        resolve(data.access_token);
-                                    })
-                                    .catch((err) => {
-                                        reject(err);
-                                    });
-                            })
-                            .catch((err) => {
-                                reject(err);
-                            });
-                    } else reject(err);
-                });
-        });
-    });
-};
-
-const getAppAccessToken = () => {
-    return new Promise((resolve, reject) => {
-        const getNewToken = () => {
-            httpsRequest(
-                `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=client_credentials`,
+const getTokenForChannel = async (id) => {
+    let tokens;
+    try {
+        tokens = await DBService.getTokensForChannel(id);
+        await validateToken(tokens.access_token);
+        return tokens.access_token;
+    } catch (err) {
+        if (err.message === "invalid access token") {
+            const { access_token, refresh_token } = await httpsRequest(
+                `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${tokens.refresh_token}`,
                 { method: "POST" }
-            )
-                .then((data) => {
-                    appAccessToken = data.access_token;
-                    resolve(appAccessToken);
-                })
-                .catch((err) => {
-                    reject(err);
-                });
-        };
-
-        if (appAccessToken) {
-            validateToken(appAccessToken)
-                .then((isValid) => {
-                    resolve(appAccessToken);
-                })
-                .catch(() => {
-                    getNewToken();
-                });
-        } else {
-            getNewToken();
+            );
+            await DBService.updateTokensForChannel(id, access_token, refresh_token);
+            return access_token;
         }
-    });
+        throw err;
+    }
+};
+
+const getNewToken = async () => {
+    const data = await httpsRequest(
+        `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=client_credentials`,
+        { method: "POST" }
+    );
+    appAccessToken = data.access_token;
+    return appAccessToken;
+};
+
+const getAppAccessToken = async () => {
+    if (appAccessToken) {
+        try {
+            await validateToken(appAccessToken);
+            return appAccessToken;
+        } catch {
+            return await getNewToken();
+        }
+    } else {
+        return await getNewToken();
+    }
 };
 
 module.exports = {
-    getUser: (key, isByLogin = false) => {
-        return new Promise((resolve, reject) => {
-            getAppAccessToken()
-                .then((token) => {
-                    const query = isByLogin ? "login" : "id";
-                    httpsRequest(`https://api.twitch.tv/helix/users?${query}=${key}`, {
-                        headers: createHeaderObject(token),
-                        method: "GET",
-                    })
-                        .then((data) => {
-                            resolve(data.data[0]);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    reject(err);
-                });
+    getUser: async (key, isByLogin = false) => {
+        const token = await getAppAccessToken();
+        const query = isByLogin ? "login" : "id";
+        const data = await httpsRequest(`https://api.twitch.tv/helix/users?${query}=${key}`, {
+            headers: createHeaderObject(token),
+            method: "GET",
         });
+        return data.data[0];
     },
-    getBatchUsersByID: (ids) => {
-        return new Promise((resolve, reject) => {
-            getAppAccessToken().then((token) => {
-                let chunks = ids.chunk(100);
-                let users = [];
-                let promises = [];
-                chunks.forEach((chunk) => {
-                    let queryString = "";
-                    chunk.forEach((id) => {
-                        queryString = `${queryString}id=${id}&`;
-                    });
-                    promises.push(
-                        httpsRequest(`https://api.twitch.tv/helix/users?${queryString}`, {
-                            headers: createHeaderObject(token),
-                            method: "GET",
-                        }).then((data) => {
-                            data.data.forEach((user) => {
-                                users.push({ id: user.id, name: user.login });
-                            });
-                        })
-                    );
-                });
-                Promise.allSettled(promises).then(() => {
-                    resolve(users);
-                });
+    getBatchUsersByID: async (ids) => {
+        const token = await getAppAccessToken();
+        let chunks = ids.chunk(100);
+        let users = [];
+        for (const chunk of chunks) {
+            let queryString = "";
+            chunk.forEach((id) => {
+                queryString = `${queryString}id=${id}&`;
             });
-        });
+            const { data } = await httpsRequest(`https://api.twitch.tv/helix/users?${queryString}`, {
+                headers: createHeaderObject(token),
+                method: "GET",
+            });
+            data.forEach((user) => {
+                users.push({ id: user.id, name: user.login });
+            });
+        }
+        return users;
     },
-    getFollowData: (fromID, toID) => {
-        return new Promise((resolve, reject) => {
-            getAppAccessToken()
-                .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/users/follows?from_id=${fromID}&to_id=${toID}`, {
-                        headers: createHeaderObject(token),
-                        method: "GET",
-                    })
-                        .then((data) => {
-                            resolve(data.data[0]);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    reject(err);
-                });
+    getFollowData: async (fromID, toID) => {
+        const token = await getAppAccessToken();
+        const data = await httpsRequest(`https://api.twitch.tv/helix/users/follows?from_id=${fromID}&to_id=${toID}`, {
+            headers: createHeaderObject(token),
+            method: "GET",
         });
+        return data.data[0];
     },
-    getFollowCount: (channelID) => {
-        return new Promise((resolve, reject) => {
-            getAppAccessToken()
-                .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/users/follows?to_id=${channelID}&first=1`, {
-                        headers: createHeaderObject(token),
-                        method: "GET",
-                    })
-                        .then((data) => {
-                            resolve(data.total);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    reject(err);
-                });
+    getFollowCount: async (channelID) => {
+        const token = await getAppAccessToken();
+        const { total } = await httpsRequest(`https://api.twitch.tv/helix/users/follows?to_id=${channelID}&first=1`, {
+            headers: createHeaderObject(token),
+            method: "GET",
         });
+        return total;
     },
-    getSubCount: (channelID) => {
-        return new Promise((resolve, reject) => {
-            getTokenForChannel(channelID)
-                .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}`, {
-                        headers: createHeaderObject(token),
-                        method: "GET",
-                    })
-                        .then((data) => {
-                            resolve(data.total);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    reject(err);
-                });
+    getSubCount: async (channelID) => {
+        const token = await getTokenForChannel(channelID);
+        const { total } = await httpsRequest(`https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}`, {
+            headers: createHeaderObject(token),
+            method: "GET",
         });
+        return total;
     },
-    getStreamData: (loginName) => {
-        return new Promise((resolve, reject) => {
-            getAppAccessToken()
-                .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/streams?user_login=${loginName}`, {
-                        headers: createHeaderObject(token),
-                        method: "GET",
-                    })
-                        .then((data) => {
-                            resolve(data.data[0]);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    reject(err);
-                });
+    getStreamData: async (loginName) => {
+        const token = await getAppAccessToken();
+        const data = await httpsRequest(`https://api.twitch.tv/helix/streams?user_login=${loginName}`, {
+            headers: createHeaderObject(token),
+            method: "GET",
         });
-    },
-    getGameName: (gameID) => {
-        return new Promise((resolve, reject) => {
-            getAppAccessToken
-                .then((token) => {
-                    httpsRequest(`https://api.twitch.tv/helix/games?id=${gameID}`, {
-                        headers: createHeaderObject(token),
-                        method: "GET",
-                    })
-                        .then((data) => {
-                            resolve(data.data[0].name);
-                        })
-                        .catch((err) => {
-                            reject(err);
-                        });
-                })
-                .catch((err) => {
-                    reject(err);
-                });
-        });
+        return data.data[0];
     },
 };
