@@ -25,7 +25,7 @@ module.exports = [
                     `;
                     return val;
                 } else {
-                    return `${userstate["user-id"]} does not follow ${channel}`;
+                    return `${userstate["username"]} does not follow ${channel}`;
                 }
             } catch {
                 return "error fetching followage data";
@@ -82,8 +82,7 @@ module.exports = [
             try {
                 const data = await twitchAPI.getStreamData(channel);
                 if (data) {
-                    const name = await twitchAPI.getGameName(data.game_id);
-                    return name;
+                    return data.game_name;
                 } else {
                     return `${channel} is not live`;
                 }
