@@ -96,17 +96,18 @@ module.exports = function (actions) {
     // ==== PRIVATE APIS ====
 
     // COMMANDS API Routes
+    const { params: commandParamValidators, schema: commandSchemaValidators } = commands.validators;
     server
         .route("/commands/:channel/:alias?")
         .all(requireAuth)
-        .get(commands.get)
-        .post((req, res) => {
+        .get(commandParamValidators, handleValidationResult, commands.get)
+        .post(commandSchemaValidators, handleValidationResult, (req, res) => {
             commands.post(actions, req, res);
         })
-        .put((req, res) => {
+        .put(commandParamValidators, commandSchemaValidators, handleValidationResult, (req, res) => {
             commands.put(actions, req, res);
         })
-        .delete((req, res) => {
+        .delete(commandParamValidators, handleValidationResult, (req, res) => {
             commands.remove(actions, req, res);
         });
 
