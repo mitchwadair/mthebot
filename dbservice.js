@@ -38,28 +38,32 @@ class DBService {
     }
 
     async initChannel(id, name, authToken, refreshToken) {
-        let query = `INSERT INTO channels (id, name, token, refresh_token, enabled) VALUES (${id}, "${name}", AES_ENCRYPT("${authToken}", "${CLIENT_SECRET}"), AES_ENCRYPT("${refreshToken}", "${CLIENT_SECRET}"), false);`;
-        let eventsQuery = `INSERT INTO events (channel_id, name, message, enabled) VALUES`;
-        Object.entries(defaultEvents).forEach(([k, v], i, arr) => {
-            eventsQuery = `${eventsQuery} (${id}, "${k}", "${v.message}", ${v.enabled})${
-                i === arr.length - 1 ? ";" : ","
-            }`;
-        });
-        await this.db.query(query);
-        await this.db.query(eventsQuery);
+        const placeholders = new Array(Object.keys(defaultEvents).length).fill("(?, ?, ?, ?)").join(",");
+        const values = Object.entries(defaultEvents)
+            .map(([k, v]) => [id, k, v.message, v.enabled])
+            .flat();
+
+        await this.db.query(
+            "INSERT INTO channels (id, name, token, refresh_token, enabled) VALUES (?, ?, AES_ENCRYPT(?, ?), AES_ENCRYPT(?, ?), false)",
+            [id, name, authToken, CLIENT_SECRET, refreshToken, CLIENT_SECRET]
+        );
+        await this.db.query(`INSERT INTO events (channel_id, name, message, enabled) VALUES ${placeholders}`, values);
     }
 
     async updateTokensForChannel(id, accessToken, refreshToken) {
-        await this.db.query(
-            `UPDATE channels SET token=AES_ENCRYPT(?, '${CLIENT_SECRET}'), refresh_token=AES_ENCRYPT(?, '${CLIENT_SECRET}') WHERE id=?`,
-            [accessToken, refreshToken, id]
-        );
+        await this.db.query("UPDATE channels SET token=AES_ENCRYPT(?, ?), refresh_token=AES_ENCRYPT(?, ?) WHERE id=?", [
+            accessToken,
+            CLIENT_SECRET,
+            refreshToken,
+            CLIENT_SECRET,
+            id,
+        ]);
     }
 
     async getTokensForChannel(id) {
         const [results] = await this.db.query(
-            `SELECT AES_DECRYPT(token, '${CLIENT_SECRET}') as access_token, AES_DECRYPT(refresh_token, '${CLIENT_SECRET}') as refresh_token FROM channels WHERE id=?`,
-            [id]
+            "SELECT AES_DECRYPT(token, ?) as access_token, AES_DECRYPT(refresh_token, ?) as refresh_token FROM channels WHERE id=?",
+            [CLIENT_SECRET, CLIENT_SECRET, id]
         );
         return results[0];
     }
@@ -72,20 +76,20 @@ class DBService {
     }
 
     async updateNameForChannel(name, id) {
-        await this.db.query(`UPDATE channels SET name=? WHERE id=?`, [name, id]);
+        await this.db.query("UPDATE channels SET name=? WHERE id=?", [name, id]);
     }
 
     async enableChannel(id) {
-        await this.db.query(`UPDATE channels SET enabled=true WHERE id=?`, [id]);
+        await this.db.query("UPDATE channels SET enabled=true WHERE id=?", [id]);
     }
 
     async disableChannel(id) {
-        await this.db.query(`UPDATE channels SET enabled=false WHERE id=?`, [id]);
+        await this.db.query("UPDATE channels SET enabled=false WHERE id=?", [id]);
     }
 
     async getAllCommandsForChannel(id) {
         const [results] = await this.db.query(
-            `SELECT alias,message,cooldown,user_level FROM commands WHERE channel_id=?`,
+            "SELECT alias,message,cooldown,user_level FROM commands WHERE channel_id=?",
             [id]
         );
         return results;
@@ -93,7 +97,7 @@ class DBService {
 
     async getCommandForChannel(alias, id) {
         const [results] = await this.db.query(
-            `SELECT alias,message,cooldown,user_level FROM commands WHERE channel_id=? and alias=?`,
+            "SELECT alias,message,cooldown,user_level FROM commands WHERE channel_id=? and alias=?",
             [id, alias]
         );
         if (results.length) {
@@ -105,7 +109,7 @@ class DBService {
         const existing = await this.getCommandForChannel(data.alias, id);
         if (!existing) {
             await this.db.query(
-                `INSERT INTO commands (channel_id, alias, message, cooldown, user_level) VALUES (?, ?, ?, ?, ?)`,
+                "INSERT INTO commands (channel_id, alias, message, cooldown, user_level) VALUES (?, ?, ?, ?, ?)",
                 [id, data.alias, data.message, data.cooldown, data.user_level]
             );
             return data;
@@ -114,7 +118,7 @@ class DBService {
 
     async updateCommandForChannel(alias, data, id) {
         const [result] = await this.db.query(
-            `UPDATE commands SET alias=?, message=?, cooldown=?, user_level=? where channel_id=? and alias=?`,
+            "UPDATE commands SET alias=?, message=?, cooldown=?, user_level=? where channel_id=? and alias=?",
             [data.alias, data.message, data.cooldown, data.user_level, id, alias]
         );
         if (result.affectedRows > 0) {
@@ -123,21 +127,21 @@ class DBService {
     }
 
     async deleteCommandForChannel(alias, id) {
-        const [result] = await this.db.query(`DELETE FROM commands where channel_id=? and alias=?`, [id, alias]);
+        const [result] = await this.db.query("DELETE FROM commands where channel_id=? and alias=?", [id, alias]);
         if (result.affectedRows > 0) {
             return true;
         }
     }
 
     async getAllEventsForChannel(id) {
-        const [results] = await this.db.query(`SELECT name,message,enabled FROM events WHERE channel_id=?`, [id]);
+        const [results] = await this.db.query("SELECT name,message,enabled FROM events WHERE channel_id=?", [id]);
         return results.map((event) => {
             return { ...event, enabled: Boolean(event.enabled) };
         });
     }
 
     async getEventForChannel(name, id) {
-        const [results] = await this.db.query(`SELECT name,message,enabled FROM events WHERE channel_id=? and name=?`, [
+        const [results] = await this.db.query("SELECT name,message,enabled FROM events WHERE channel_id=? and name=?", [
             id,
             name,
         ]);
@@ -149,7 +153,7 @@ class DBService {
 
     async updateEventForChannel(name, data, id) {
         const [result] = await this.db.query(
-            `UPDATE events SET name=?, message=?, enabled=? where channel_id=? and name=?`,
+            "UPDATE events SET name=?, message=?, enabled=? where channel_id=? and name=?",
             [name, data.message, data.enabled, id, name]
         );
         if (result.affectedRows > 0) {
@@ -159,7 +163,7 @@ class DBService {
 
     async getAllTimersForChannel(id) {
         const [results] = await this.db.query(
-            `SELECT name,message,enabled,\`interval\`,message_threshold FROM timers WHERE channel_id=?`,
+            'SELECT name,message,enabled,"interval",message_threshold FROM timers WHERE channel_id=?',
             [id]
         );
         return results.map((timer) => {
@@ -169,7 +173,7 @@ class DBService {
 
     async getTimerForChannel(name, id) {
         const [results] = await this.db.query(
-            `SELECT name,message,enabled,\`interval\`,message_threshold FROM timers WHERE channel_id=? and name=?`,
+            'SELECT name,message,enabled,"interval",message_threshold FROM timers WHERE channel_id=? and name=?',
             [id, name]
         );
         if (results.length) {
@@ -183,7 +187,7 @@ class DBService {
         const existing = await this.getTimerForChannel(name, id);
         if (!existing) {
             await this.db.query(
-                `INSERT INTO timers (channel_id, name, enabled, message, \`interval\`, message_threshold) VALUES (?, ?, ?, ?, ?, ?)`,
+                'INSERT INTO timers (channel_id, name, enabled, message, "interval", message_threshold) VALUES (?, ?, ?, ?, ?, ?)',
                 [id, name, enabled, message, interval, message_threshold]
             );
             return data;
@@ -193,7 +197,7 @@ class DBService {
     async updateTimerForChannel(name, data, id) {
         const { name: newName, enabled, message, interval, message_threshold } = data;
         const [result] = await this.db.query(
-            `UPDATE timers SET name=?, enabled=?, message=?, \`interval\`=?, message_threshold=? where channel_id=? and name=?`,
+            'UPDATE timers SET name=?, enabled=?, message=?, "interval"=?, message_threshold=? where channel_id=? and name=?',
             [newName, enabled, message, interval, message_threshold, id, name]
         );
         if (result.affectedRows > 0) {
@@ -202,7 +206,7 @@ class DBService {
     }
 
     async deleteTimerForChannel(name, id) {
-        const [result] = await this.db.query(`DELETE FROM timers where channel_id=? and name=?`, [id, name]);
+        const [result] = await this.db.query("DELETE FROM timers where channel_id=? and name=?", [id, name]);
         if (result.affectedRows > 0) {
             return true;
         }
