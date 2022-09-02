@@ -1,7 +1,7 @@
 {
     "follow": {
         "enabled": true,
-        "message": "{{username}} followed!"
+        "message": "{{user}} followed!"
     },
     "sub": {
         "enabled": true,
