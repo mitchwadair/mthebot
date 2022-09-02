@@ -68,6 +68,6 @@ module.exports = {
             : 0;
     },
     timedLog: (message) => {
-        console.log(`${new Date(Date.now()).toUTCString()} ${message}`);
+        console.log(`${new Date().toUTCString()} ${message}`);
     },
 };
