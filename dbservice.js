@@ -38,10 +38,9 @@ class DBService {
     }
 
     async initChannel(id, name, authToken, refreshToken) {
-        const placeholders = new Array(Object.keys(defaultEvents).length).fill("(?, ?, ?, ?)").join(",");
-        const values = Object.entries(defaultEvents)
-            .map(([k, v]) => [id, k, v.message, v.enabled])
-            .flat();
+        const entries = Object.entries(defaultEvents);
+        const placeholders = new Array(entries.length).fill("(?, ?, ?, ?)").join(",");
+        const values = entries.map(([event, { message, enabled }]) => [id, event, message, enabled]).flat();
 
         await this.db.execute(
             "INSERT INTO channels (id, name, token, refresh_token, enabled) VALUES (?, ?, AES_ENCRYPT(?, ?), AES_ENCRYPT(?, ?), false)",
