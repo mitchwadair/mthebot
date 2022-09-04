@@ -38,10 +38,9 @@ const post = async (actions, sessionPool, req, res) => {
                 "client-id": CLIENT_ID,
                 authorization: `Bearer ${access_token}`,
             };
-            const userResponse = await request(`https://api.twitch.tv/helix/users`, { headers });
             const {
                 data: [user],
-            } = await userResponse.json();
+            } = await request(`https://api.twitch.tv/helix/users`, { headers });
             const data = await DBService.getChannel(user.id);
             if (data) {
                 await DBService.updateTokensForChannel(user.id, access_token, refresh_token);
