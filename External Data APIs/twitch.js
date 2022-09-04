@@ -20,10 +20,12 @@ const createHeaderObject = (token) => {
 };
 
 const validateToken = async (token) => {
+    timedLog("validating app access token...");
     const res = await fetch("https://id.twitch.tv/oauth2/validate", {
         headers: createHeaderObject(token),
     });
     if (res.status === 401) {
+        timedLog("app access token not valid, refreshing...");
         await getNewAppAccessToken();
         resetValidationInterval();
     }
@@ -35,6 +37,7 @@ const getTokenForChannel = async (id) => {
 };
 
 const getNewUserAuthToken = async (id) => {
+    timedLog("fetching new user authentication token...");
     const { refresh_token: rt } = await DBService.getTokensForChannel(id);
     const res = await fetch(
         `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=refresh_token&refresh_token=${rt}`,
@@ -46,6 +49,7 @@ const getNewUserAuthToken = async (id) => {
 };
 
 const getNewAppAccessToken = async () => {
+    timedLog("fetching new app access token...");
     appAccessToken = undefined;
     const res = await fetch(
         `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&grant_type=client_credentials`,
