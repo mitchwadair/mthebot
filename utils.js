@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Mitchell Adair
+// Copyright (c) 2020-2022 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
@@ -15,14 +15,24 @@ const USER_TYPES = {
 };
 
 module.exports = {
-    request: async (url, options) => {
-        const res = await fetch(url, options);
-        const clone = res.clone(); // can only read res once, so clone so we can fallback to text
-        try {
-            return clone.json();
-        } catch {
-            return res.text();
-        }
+    request: async (url, options, onAuthFailure) => {
+        const r = async () => {
+            const res = await fetch(url, options);
+            if (res.status === 401) {
+                const newToken = await onAuthFailure();
+                options.header.authorization = `Bearer ${newToken}`;
+                return r();
+            } else {
+                try {
+                    // can only read res once, so clone so we can fallback to text
+                    return res.clone().json();
+                } catch {
+                    return res.text();
+                }
+            }
+        };
+
+        return r();
     },
     getLengthDataFromMillis: (ms) => {
         const date = new Date(ms);
