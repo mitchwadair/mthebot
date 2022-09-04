@@ -61,6 +61,6 @@ module.exports = {
             : 0;
     },
     timedLog: (message) => {
-        console.log(`${new Date().toUTCString()} ${message}`);
+        console.log(`** BOT: ${new Date().toUTCString()} ${message}`);
     },
 };
