@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const { httpsRequest } = require("../../utils");
+const { request } = require("../../utils");
 const DBService = require("../../dbservice");
 const crypto = require("crypto");
 
@@ -28,7 +28,7 @@ const post = async (actions, sessionPool, req, res) => {
 
     if (code) {
         try {
-            const { access_token, refresh_token, expires_in } = await httpsRequest(
+            const { access_token, refresh_token, expires_in } = await request(
                 `https://id.twitch.tv/oauth2/token?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${code}&grant_type=authorization_code&redirect_uri=${AUTH_REDIRECT_URL}`,
                 { method: "POST" }
             );
@@ -38,7 +38,7 @@ const post = async (actions, sessionPool, req, res) => {
             };
             const {
                 data: [user],
-            } = await httpsRequest(`https://api.twitch.tv/helix/users`, { headers, method: "GET" });
+            } = await request(`https://api.twitch.tv/helix/users`, { headers, method: "GET" });
             const data = await DBService.getChannel(user.id);
             if (data) {
                 await DBService.updateTokensForChannel(user.id, access_token, refresh_token);

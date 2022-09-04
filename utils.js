@@ -15,7 +15,7 @@ const USER_TYPES = {
 };
 
 module.exports = {
-    httpsRequest: (url, options) => {
+    request: (url, options) => {
         return new Promise((resolve, reject) => {
             https
                 .request(url, options, (res) => {
