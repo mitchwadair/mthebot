@@ -3,7 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const https = require("https");
+const fetch = require("node-fetch");
 
 const USER_TYPES = {
     user: 0,
@@ -15,31 +15,14 @@ const USER_TYPES = {
 };
 
 module.exports = {
-    request: (url, options) => {
-        return new Promise((resolve, reject) => {
-            https
-                .request(url, options, (res) => {
-                    let data = [];
-                    res.on("error", (err) => {
-                        reject(err);
-                    })
-                        .on("data", (chunk) => {
-                            data.push(chunk);
-                        })
-                        .on("end", () => {
-                            data = JSON.parse(Buffer.concat(data).toString());
-                            if (data.error) {
-                                reject(data);
-                            } else {
-                                resolve(data);
-                            }
-                        });
-                })
-                .on("error", (err) => {
-                    reject(err);
-                })
-                .end();
-        });
+    request: async (url, options) => {
+        const res = await fetch(url, options);
+        const clone = res.clone(); // can only read res once, so clone so we can fallback to text
+        try {
+            return clone.json();
+        } catch {
+            return res.text();
+        }
     },
     getLengthDataFromMillis: (ms) => {
         const date = new Date(ms);
