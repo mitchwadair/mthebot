@@ -326,22 +326,26 @@ const actions = {
     },
     joinChannel: async (channelID) => {
         try {
-            const data = await twitchAPI.getUser(channelID);
-            if (data) {
-                await client.join(data.name);
+            const { login } = await twitchAPI.getUser(channelID);
+            if (login) {
+                await client.join(login);
             }
         } catch (err) {
-            timedLog(`ERROR joining channel ${channelID}: ${err.message}`);
+            const { message } = err;
+            timedLog(`ERROR joining channel ${channelID}: ${message || err}`);
+            throw err;
         }
     },
     leaveChannel: async (channelID) => {
         try {
-            const data = await twitchAPI.getUser(channelID);
-            if (data) {
-                await client.part(data.name);
+            const { login } = await twitchAPI.getUser(channelID);
+            if (login) {
+                await client.part(login);
             }
         } catch (err) {
-            timedLog(`ERROR leaving channel ${channelID}: ${err.message}`);
+            const { message } = err;
+            timedLog(`ERROR leaving channel ${channelID}: ${message || err}`);
+            throw err;
         }
     },
     subscribeFollow: (channelID) => {
