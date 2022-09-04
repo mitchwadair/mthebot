@@ -3,6 +3,7 @@
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
+const { request } = require("../../utils");
 const fetch = require("node-fetch");
 const DBService = require("../../dbservice");
 const crypto = require("crypto");
@@ -37,7 +38,7 @@ const post = async (actions, sessionPool, req, res) => {
                 "client-id": CLIENT_ID,
                 authorization: `Bearer ${access_token}`,
             };
-            const userResponse = await fetch(`https://api.twitch.tv/helix/users`, { headers, method: "GET" });
+            const userResponse = await request(`https://api.twitch.tv/helix/users`, { headers });
             const {
                 data: [user],
             } = await userResponse.json();

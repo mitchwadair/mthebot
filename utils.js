@@ -19,6 +19,9 @@ module.exports = {
         const r = async () => {
             const res = await fetch(url, options);
             if (res.status === 401) {
+                if (!onAuthFailure) {
+                    throw new Error("received 401 error without a way to refresh");
+                }
                 timedLog("received 401 when attempting request, retrying with new token...");
                 const newToken = await onAuthFailure();
                 options.header.authorization = `Bearer ${newToken}`;
