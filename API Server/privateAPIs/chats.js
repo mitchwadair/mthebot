@@ -1,9 +1,10 @@
-// Copyright (c) 2020 Mitchell Adair
+// Copyright (c) 2020-2022 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
 const DBService = require("../../dbservice");
+const { setModeratorStatus } = require("../../External Data APIs/twitch");
 
 const get = async (req, res) => {
     const { channel } = req.params;
@@ -24,6 +25,7 @@ const post = async (actions, req, res) => {
     try {
         await DBService.enableChannel(channel);
         await actions.joinChannel(channel);
+        await setModeratorStatus(channel, true);
         res.status(200).send(`Bot set to enabled for channel ${channel}`);
     } catch (err) {
         res.status(500).send(err.message);
@@ -35,6 +37,7 @@ const remove = async (actions, req, res) => {
     try {
         await DBService.disableChannel(channel);
         await actions.leaveChannel(channel);
+        await setModeratorStatus(channel, false);
         res.status(200).send(`Bot set to disabled for channel ${channel}`);
     } catch (err) {
         res.status(500).send(err.message);

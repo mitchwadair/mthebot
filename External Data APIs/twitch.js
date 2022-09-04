@@ -7,7 +7,7 @@ const { request, timedLog } = require("../utils");
 const fetch = require("node-fetch");
 const DBService = require("../dbservice");
 
-const { CLIENT_ID, CLIENT_SECRET } = process.env;
+const { CLIENT_ID, CLIENT_SECRET, BOT_USER_ID } = process.env;
 
 let appAccessToken;
 let validationInterval;
@@ -151,5 +151,13 @@ module.exports = {
             getNewAppAccessToken
         );
         return data[0];
+    },
+    setModeratorStatus: async (channelID, add) => {
+        const token = await getTokenForChannel(channelID);
+        await request(
+            `https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${channelID}&user_id=${BOT_USER_ID}`,
+            { method: add ? "POST" : "DELETE", headers: createHeaderObject(token) },
+            getNewUserAuthToken
+        );
     },
 };
