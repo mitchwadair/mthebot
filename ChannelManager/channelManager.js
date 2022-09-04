@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Mitchell Adair
+// Copyright (c) 2020-2022 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
@@ -41,7 +41,7 @@ class ChannelManager {
         if (channel) {
             channel.clearTimers();
             delete this.channels[channelKey];
-            timedLog(`** BOT: Removed channel ${channelKey} from active channels`);
+            timedLog(`Removed channel ${channelKey} from active channels`);
         }
     }
 
@@ -60,7 +60,7 @@ class ChannelManager {
             this.refreshChannel(channelKey);
         } else {
             await this.fetchChannelData(channelKey);
-            timedLog(`** BOT: Added channel ${channelKey} to active channels`);
+            timedLog(`Added channel ${channelKey} to active channels`);
         }
         return this.getChannel(channelKey);
     }
@@ -73,7 +73,7 @@ class ChannelManager {
 
             if (channel.name !== channelKey) {
                 await DBService.updateNameForChannel(channelKey, channelID);
-                timedLog(`** BOT: Updated name for id ${channelID} in DB to ${channelKey}`);
+                timedLog(`Updated name for id ${channelID} in DB to ${channelKey}`);
             }
 
             const commands = await DBService.getAllCommandsForChannel(channelID);
@@ -87,7 +87,7 @@ class ChannelManager {
 
             this.addChannel(channelKey, channelID, commands, events, timers);
         } catch (error) {
-            timedLog(`** BOT: ERROR getting user data for channel ${channelKey}`);
+            timedLog(`ERROR getting user data for channel ${channelKey}`);
             throw error;
         }
     }

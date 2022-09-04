@@ -1,4 +1,4 @@
-// Copyright (c) 2020 Mitchell Adair
+// Copyright (c) 2020-2022 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
@@ -164,7 +164,7 @@ module.exports = function (actions) {
     server.route("/users").get(users.get);
 
     server.listen(port, () => {
-        timedLog(`** BOT: API Server listening on port ${port}`);
+        timedLog(`API Server listening on port ${port}`);
     });
     return server;
 };

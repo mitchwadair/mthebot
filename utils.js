@@ -1,9 +1,9 @@
-// Copyright (c) 2020 Mitchell Adair
+// Copyright (c) 2020-2022 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-const https = require("https");
+const fetch = require("node-fetch");
 
 const USER_TYPES = {
     user: 0,
@@ -15,31 +15,32 @@ const USER_TYPES = {
 };
 
 module.exports = {
-    httpsRequest: (url, options) => {
-        return new Promise((resolve, reject) => {
-            https
-                .request(url, options, (res) => {
-                    let data = [];
-                    res.on("error", (err) => {
-                        reject(err);
-                    })
-                        .on("data", (chunk) => {
-                            data.push(chunk);
-                        })
-                        .on("end", () => {
-                            data = JSON.parse(Buffer.concat(data).toString());
-                            if (data.error) {
-                                reject(data);
-                            } else {
-                                resolve(data);
-                            }
-                        });
-                })
-                .on("error", (err) => {
-                    reject(err);
-                })
-                .end();
-        });
+    request: async (url, options, onAuthFailure) => {
+        const r = async () => {
+            const res = await fetch(url, options);
+            if (res.ok) {
+                try {
+                    // can only read res once, so clone so we can fallback to text
+                    const json = await res.clone().json();
+                    return json;
+                } catch {
+                    return res.text();
+                }
+            } else if (res.status === 401) {
+                if (!onAuthFailure) {
+                    throw new Error("received 401 error without a way to refresh");
+                }
+                timedLog("received 401 when attempting request, retrying with new token...");
+                const newToken = await onAuthFailure();
+                options.header.authorization = `Bearer ${newToken}`;
+                return r();
+            } else {
+                // if response not OK and not 401, throw the response body as error
+                throw await res.json();
+            }
+        };
+
+        return r();
     },
     getLengthDataFromMillis: (ms) => {
         const date = new Date(ms);
@@ -68,6 +69,6 @@ module.exports = {
             : 0;
     },
     timedLog: (message) => {
-        console.log(`${new Date().toUTCString()} ${message}`);
+        console.log(`** BOT: ${new Date().toUTCString()} ${message}`);
     },
 };
