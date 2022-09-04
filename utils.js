@@ -18,7 +18,15 @@ module.exports = {
     request: async (url, options, onAuthFailure) => {
         const r = async () => {
             const res = await fetch(url, options);
-            if (res.status === 401) {
+            if (res.ok) {
+                try {
+                    // can only read res once, so clone so we can fallback to text
+                    const json = await res.clone().json();
+                    return json;
+                } catch {
+                    return res.text();
+                }
+            } else if (res.status === 401) {
                 if (!onAuthFailure) {
                     throw new Error("received 401 error without a way to refresh");
                 }
@@ -27,12 +35,8 @@ module.exports = {
                 options.header.authorization = `Bearer ${newToken}`;
                 return r();
             } else {
-                try {
-                    // can only read res once, so clone so we can fallback to text
-                    return res.clone().json();
-                } catch {
-                    return res.text();
-                }
+                // if response not OK and not 401, throw the response body as error
+                throw await res.json();
             }
         };
 
