@@ -7,11 +7,11 @@ const DBService = require("../../dbservice");
 const { body, param } = require("express-validator");
 
 const validators = {
-    params: [param("name").optional().isString().escape()],
+    params: [param("name").optional().isString()],
     schema: [
-        body("name").isString().escape(),
+        body("name").isString(),
         body("enabled").isBoolean(),
-        body("message").isString().escape(),
+        body("message").isString(),
         body("interval").isNumeric(),
         body("message_threshold").isNumeric(),
     ],
