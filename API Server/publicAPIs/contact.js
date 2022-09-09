@@ -11,8 +11,8 @@ const CONTACT_TYPES = ["Help", "Bug Report", "Suggestion", "Feedback", "General"
 const validators = {
     schema: [
         body("type").isIn(CONTACT_TYPES),
-        body("subject").trim().escape(),
-        body("name").trim().escape(),
+        body("subject").trim(),
+        body("name").trim(),
         body("email").isEmail().normalizeEmail(),
         body("message").trim().escape(),
     ],
@@ -23,13 +23,12 @@ const post = (req, res) => {
     const { type, subject, name, email, message } = req.body;
 
     const emailData = {
-        from: "", //this is ignored by gmail
+        from: `"${name}" <${email}>`, // "email" is ignored by gmail
         to: EMAIL_USERNAME,
         subject: `${type}: "${subject}" from ${name}`,
         html: `
-            <p>"${type}" contact from ${name}, ${email}</p></br>
-            <p>${message}</p></br>
-            <a href="mailto:${email}?subject=RE: ${type}: ${subject}&body=Hi ${
+        <p>${message}</p></br>
+        <a href="mailto:${email}?subject=RE: ${type}: ${subject}&body=Hi ${
             name.split(" ")[0]
         },\n\n\nYou said:\n${message}">Reply</a>
         `,

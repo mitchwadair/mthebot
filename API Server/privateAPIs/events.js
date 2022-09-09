@@ -7,8 +7,8 @@ const DBService = require("../../dbservice");
 const { body, param } = require("express-validator");
 
 const validators = {
-    params: [param("name").optional().isString().escape()],
-    schema: [body("enabled").isBoolean(), body("message").isString().escape()],
+    params: [param("name").optional().isString()],
+    schema: [body("enabled").isBoolean(), body("message").isString()],
 };
 
 const get = async (req, res) => {
