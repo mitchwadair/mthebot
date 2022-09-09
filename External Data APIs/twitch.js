@@ -9,6 +9,9 @@ const DBService = require("../dbservice");
 
 const { CLIENT_ID, CLIENT_SECRET, BOT_USER_ID } = process.env;
 
+// conveniently, TES will initialize appAccessToken on startup
+// by calling `getNewAppAccessToken`.  MtheBot_'s call to
+// getAppAccessToken will wait until this is defined to resolve
 let appAccessToken;
 let validationInterval;
 
@@ -81,9 +84,6 @@ const resetValidationInterval = () => {
     clearInterval(validationInterval);
     validationInterval = setInterval(validateToken, 3600000);
 };
-
-// init the access token on start
-getNewAppAccessToken();
 
 module.exports = {
     getUser: async (key, isByLogin = false) => {
@@ -160,4 +160,5 @@ module.exports = {
             getNewUserAuthToken
         );
     },
+    getNewAppAccessToken,
 };

@@ -13,6 +13,7 @@ const twitchAPI = require("./External Data APIs/twitch");
 const { timedLog, getUserLevel } = require("./utils");
 const TimerEmitter = require("./timerEmitter");
 const DATA_TAGS = require("./DataTags/datatags");
+const { getNewAppAccessToken } = require("./External Data APIs/twitch");
 
 const { BOT_USERNAME, OAUTH_TOKEN, CLIENT_ID, CLIENT_SECRET, TES_SECRET, TES_BASE_URL } = process.env;
 
@@ -366,12 +367,14 @@ const tesConfig = {
     identity: {
         id: CLIENT_ID,
         secret: CLIENT_SECRET,
+        onAuthenticationFailure: getNewAppAccessToken,
     },
     listener: {
         baseURL: TES_BASE_URL,
         secret: TES_SECRET,
         server: server,
     },
+    options: { debug: true },
 };
 
 const tes = new TES(tesConfig);
