@@ -14,6 +14,10 @@ const USER_TYPES = {
     broadcaster: 3,
 };
 
+const timedLog = (message) => {
+    console.log(`${new Date().toUTCString()} ** BOT: ${message}`);
+};
+
 module.exports = {
     request: async (url, options, onAuthFailure) => {
         const r = async () => {
@@ -36,7 +40,9 @@ module.exports = {
                 return r();
             } else {
                 // if response not OK and not 401, throw the response body as error
-                throw await res.json();
+                const err = await res.json();
+                timedLog(`received non-401 error when attempting request: ${err.message}`);
+                throw err;
             }
         };
 
@@ -68,7 +74,5 @@ module.exports = {
                   }, USER_TYPES.user)
             : 0;
     },
-    timedLog: (message) => {
-        console.log(`${new Date().toUTCString()} ** BOT: ${message}`);
-    },
+    timedLog,
 };
