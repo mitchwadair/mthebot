@@ -139,7 +139,7 @@ module.exports = {
         const { total } = await request(
             `https://api.twitch.tv/helix/subscriptions?broadcaster_id=${channelID}`,
             { headers: createHeaderObject(token) },
-            getNewUserAuthToken
+            () => getNewUserAuthToken(channelID)
         );
         return total;
     },
@@ -157,7 +157,7 @@ module.exports = {
         await request(
             `https://api.twitch.tv/helix/moderation/moderators?broadcaster_id=${channelID}&user_id=${BOT_USER_ID}`,
             { method: add ? "POST" : "DELETE", headers: createHeaderObject(token) },
-            getNewUserAuthToken
+            () => getNewUserAuthToken(channelID)
         );
     },
     getNewAppAccessToken,
