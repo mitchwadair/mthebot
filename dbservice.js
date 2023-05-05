@@ -6,7 +6,7 @@
 const mysql = require("mysql2");
 const defaultEvents = require("./defaultEvents.json");
 
-const { RDS_HOSTNAME, RDS_USERNAME, RDS_PASSWORD, RDS_PORT, RDS_DB_NAME, CLIENT_SECRET } = process.env;
+const { DB_HOSTNAME, DB_USERNAME, DB_PASSWORD, DB_PORT, DB_NAME, CLIENT_SECRET } = process.env;
 
 class DBService {
     constructor() {
@@ -16,11 +16,12 @@ class DBService {
 
         this.db = mysql
             .createPool({
-                host: RDS_HOSTNAME,
-                user: RDS_USERNAME,
-                password: RDS_PASSWORD,
-                port: RDS_PORT,
-                database: RDS_DB_NAME,
+                host: DB_HOSTNAME,
+                port: DB_PORT,
+                user: DB_USERNAME,
+                password: DB_PASSWORD,
+                database: DB_NAME,
+                ssl: { rejectUnauthorized: true },
             })
             .promise();
 
