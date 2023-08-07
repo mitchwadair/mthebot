@@ -351,7 +351,7 @@ const actions = {
     },
     subscribeFollow: (channelID) => {
         const condition = { broadcaster_user_id: channelID };
-        return tes.subscribe("channel.follow", condition);
+        return tes.subscribe("channel.follow", condition, "2");
     },
     unsubscribeFollow: (channel) => {
         const condition = { broadcaster_user_id: channel };
@@ -370,6 +370,7 @@ const tesConfig = {
         onAuthenticationFailure: getNewAppAccessToken,
     },
     listener: {
+        type: "webhook",
         baseURL: TES_BASE_URL,
         secret: TES_SECRET,
         server: server,
