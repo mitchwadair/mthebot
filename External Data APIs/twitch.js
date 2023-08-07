@@ -117,9 +117,9 @@ module.exports = {
         return users;
     },
     getFollowData: async (fromID, toID) => {
-        const token = await getAppAccessToken();
+        const token = await getTokenForChannel(toID);
         const { data } = await request(
-            `https://api.twitch.tv/helix/users/follows?from_id=${fromID}&to_id=${toID}`,
+            `https://api.twitch.tv/helix/channels/followers?broadcaster_id=${toID}&user_id=${fromID}`,
             { headers: createHeaderObject(token) },
             getNewAppAccessToken
         );
@@ -128,7 +128,7 @@ module.exports = {
     getFollowCount: async (channelID) => {
         const token = await getAppAccessToken();
         const { total } = await request(
-            `https://api.twitch.tv/helix/users/follows?to_id=${channelID}&first=1`,
+            `https://api.twitch.tv/helix/channels/followers?broadcaster_id=${channelID}&first=1`,
             { headers: createHeaderObject(token) },
             getNewAppAccessToken
         );
