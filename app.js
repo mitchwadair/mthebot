@@ -15,7 +15,7 @@ const TimerEmitter = require("./timerEmitter");
 const DATA_TAGS = require("./DataTags/datatags");
 const { getNewAppAccessToken } = require("./External Data APIs/twitch");
 
-const { BOT_USERNAME, OAUTH_TOKEN, CLIENT_ID, CLIENT_SECRET, TES_SECRET, TES_BASE_URL } = process.env;
+const { BOT_USERNAME, BOT_USER_ID, OAUTH_TOKEN, CLIENT_ID, CLIENT_SECRET, TES_SECRET, TES_BASE_URL } = process.env;
 
 // ===================== HELPER FUNCTIONS =====================
 
@@ -350,11 +350,11 @@ const actions = {
         }
     },
     subscribeFollow: (channelID) => {
-        const condition = { broadcaster_user_id: channelID };
+        const condition = { broadcaster_user_id: channelID, moderator_user_id: BOT_USER_ID };
         return tes.subscribe("channel.follow", condition, "2");
     },
     unsubscribeFollow: (channel) => {
-        const condition = { broadcaster_user_id: channel };
+        const condition = { broadcaster_user_id: channel, moderator_user_id: BOT_USER_ID };
         return tes.unsubscribe("channel.follow", condition);
     },
 };
