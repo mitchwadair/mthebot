@@ -68,7 +68,7 @@ jobs:
             fi
 
             # Run server
-            nohup bun ./app.js &> server.log &
+            nohup bun ./app.js &> /dev/null &
             disown
 
             # Clean up old build(s)
