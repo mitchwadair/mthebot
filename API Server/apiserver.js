@@ -1,4 +1,4 @@
-// Copyright (c) 2020-2022 Mitchell Adair
+// Copyright (c) 2020-2025 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
@@ -11,7 +11,6 @@ const commands = require("./privateAPIs/commands");
 const timers = require("./privateAPIs/timers");
 const events = require("./privateAPIs/events");
 const chats = require("./privateAPIs/chats");
-const contact = require("./publicAPIs/contact");
 const auth = require("./publicAPIs/auth");
 
 const DBService = require("../dbservice");
@@ -98,7 +97,7 @@ module.exports = function (actions) {
     // COMMANDS API Routes
     const { params: commandParamValidators, schema: commandSchemaValidators } = commands.validators;
     server
-        .route("/commands/:channel/:alias?")
+        .route("/commands/:channel{/:alias}")
         .all(requireAuth)
         .get(commandParamValidators, handleValidationResult, commands.get)
         .post(commandSchemaValidators, handleValidationResult, (req, res) => {
@@ -114,7 +113,7 @@ module.exports = function (actions) {
     // EVENTS API ROUTES
     const { params: eventParamValidators, schema: eventSchemaValidators } = events.validators;
     server
-        .route("/events/:channel/:name?")
+        .route("/events/:channel{/:name}")
         .all(requireAuth)
         .get(eventParamValidators, handleValidationResult, events.get)
         .put(eventParamValidators, eventSchemaValidators, handleValidationResult, (req, res) => {
@@ -124,7 +123,7 @@ module.exports = function (actions) {
     // TIMERS API ROUTES
     const { params: timerParamValidators, schema: timerSchemaValidators } = timers.validators;
     server
-        .route("/timers/:channel/:name?")
+        .route("/timers/:channel{/:name}")
         .all(requireAuth)
         .get(timerParamValidators, handleValidationResult, timers.get)
         .post(timerSchemaValidators, handleValidationResult, (req, res) => {
@@ -155,10 +154,6 @@ module.exports = function (actions) {
     server.route("/auth").post((req, res) => {
         auth.post(actions, sessionPool, req, res);
     });
-
-    // CONTACT API ROUTES
-    const { schema: contactSchemaValidators } = contact.validators;
-    server.route("/contact").post(contactSchemaValidators, handleValidationResult, contact.post);
 
     // USERS API ROUTES
     server.route("/users").get(users.get);

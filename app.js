@@ -1,9 +1,8 @@
-// Copyright (c) 2020-2022 Mitchell Adair
+// Copyright (c) 2020-2025 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
-require("dotenv").config();
 const tmi = require("tmi.js");
 const TES = require("tesjs");
 const APIServer = require("./API Server/apiserver");
