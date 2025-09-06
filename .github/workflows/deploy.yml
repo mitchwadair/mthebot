@@ -59,8 +59,17 @@ jobs:
             echo "Installing deps..."
             bun install
 
+            # Conditionally kill the previous process
+            if lsof -i:${{ secrets.SERVER_PORT }} > /dev/null; then
+              echo "Process found on port ${{ secrets.SERVER_PORT }}. Killing the process..."
+              kill $(lsof -t -i:${{ secrets.SERVER_PORT }})
+            else
+              echo "No process running on port ${{ secrets.SERVER_PORT }}."
+            fi
+
             # Run server
-            bun ./app.js &> /dev/null
+            nohup bun ./app.js &> /dev/null &
+            disown
 
             # Clean up old build(s)
             cd ../
