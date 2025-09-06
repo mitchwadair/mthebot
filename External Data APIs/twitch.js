@@ -1,10 +1,9 @@
-// Copyright (c) 2020-2022 Mitchell Adair
+// Copyright (c) 2020-2025 Mitchell Adair
 //
 // This software is released under the MIT License.
 // https://opensource.org/licenses/MIT
 
 const { request, timedLog } = require("../utils");
-const fetch = require("node-fetch");
 const DBService = require("../dbservice");
 
 const { CLIENT_ID, CLIENT_SECRET, BOT_USER_ID } = process.env;
