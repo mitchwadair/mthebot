@@ -97,7 +97,7 @@ module.exports = function (actions) {
     // COMMANDS API Routes
     const { params: commandParamValidators, schema: commandSchemaValidators } = commands.validators;
     server
-        .route("/commands/:channel/:alias?")
+        .route("/commands/:channel{/:alias}")
         .all(requireAuth)
         .get(commandParamValidators, handleValidationResult, commands.get)
         .post(commandSchemaValidators, handleValidationResult, (req, res) => {
@@ -113,7 +113,7 @@ module.exports = function (actions) {
     // EVENTS API ROUTES
     const { params: eventParamValidators, schema: eventSchemaValidators } = events.validators;
     server
-        .route("/events/:channel/:name?")
+        .route("/events/:channel{/:name}")
         .all(requireAuth)
         .get(eventParamValidators, handleValidationResult, events.get)
         .put(eventParamValidators, eventSchemaValidators, handleValidationResult, (req, res) => {
@@ -123,7 +123,7 @@ module.exports = function (actions) {
     // TIMERS API ROUTES
     const { params: timerParamValidators, schema: timerSchemaValidators } = timers.validators;
     server
-        .route("/timers/:channel/:name?")
+        .route("/timers/:channel{/:name}")
         .all(requireAuth)
         .get(timerParamValidators, handleValidationResult, timers.get)
         .post(timerSchemaValidators, handleValidationResult, (req, res) => {
