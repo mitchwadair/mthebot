@@ -58,12 +58,22 @@ jobs:
             echo "Installing deps..."
             bun install
 
-            # Conditionally kill the previous process
-            if lsof -i:${{ secrets.SERVER_PORT }} > /dev/null; then
-              echo "Process found on port ${{ secrets.SERVER_PORT }}. Killing the process..."
-              kill $(lsof -t -i:${{ secrets.SERVER_PORT }})
+            # Find PID(s) of the server
+            PIDS=\$(pgrep -f "bun .*app.js")
+            # Kill old server
+            if [ -n "\$PIDS" ]; then
+              echo "Found Bun process(es) app.js: \$PIDS. Shutting down..."
+              for pid in \$PIDS; do
+                kill -SIGTERM "\$pid"
+                echo "Waiting for \$pid to exit..."
+                if ! timeout 90s tail --pid=\$pid -f /dev/null; then
+                  echo "Timeout waiting for PID \$pid. May not have shut down cleanly."
+                else
+                  echo "Process \$pid exited gracefully."
+                fi
+              done
             else
-              echo "No process running on port ${{ secrets.SERVER_PORT }}."
+              echo "No Bun processes matching app.js found."
             fi
 
             # Run server
