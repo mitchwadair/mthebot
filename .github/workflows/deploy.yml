@@ -33,14 +33,14 @@ jobs:
 
       - name: Copy files to Droplet
         run: |
-          # Copy files to droplet using scp
-          ssh -o StrictHostKeyChecking=no root@${{ secrets.DROPLET_IP }} "mkdir -p ${{ secrets.SERVER_DIRECTORY }}/${{ github.sha }}" 
-          scp -o StrictHostKeyChecking=no deploy.tar.gz root@${{ secrets.DROPLET_IP }}:${{ secrets.SERVER_DIRECTORY }}/${{ github.sha }}/
+          # Copy files to droplet using rsync
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.DROPLET_IP }} "mkdir -p ${{ secrets.SERVER_DIRECTORY }}/${{ github.sha }}" 
+          rsync -avz -e "ssh -o StrictHostKeyChecking=no" deploy.tar.gz ubuntu@${{ secrets.DROPLET_IP }}:${{ secrets.SERVER_DIRECTORY }}/${{ github.sha }}/
 
       - name: Restart Server
         run: |
           # Connect to the droplet and restart the server
-          ssh -o StrictHostKeyChecking=no root@${{ secrets.DROPLET_IP }} <<EOF
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.DROPLET_IP }} <<EOF
             # Navigate to the server directory
             cd ${{ secrets.SERVER_DIRECTORY }}/${{ github.sha }}
 
