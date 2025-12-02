@@ -4,7 +4,7 @@
   "description": "Chatbot for Twitch",
   "main": "app.js",
   "dependencies": {
-    "express": "5.1.0",
+    "express": "5.2.0",
     "express-validator": "7.2.1",
     "mysql2": "3.14.4",
     "tesjs": "1.0.7",
